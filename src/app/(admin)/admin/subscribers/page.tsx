@@ -105,7 +105,7 @@ export default function SubscribersPage() {
   );
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="px-0 py-4 md:p-8 space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black tracking-tight flex items-center gap-2">

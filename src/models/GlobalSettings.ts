@@ -66,6 +66,7 @@ export interface IGlobalSettings extends Document {
   googleAnalyticsId?: string; // GA4 Measurement ID (G-XXXXXX)
   googleAnalyticsPropertyId?: string; // GA4 Property ID (Numeric)
   googleSearchConsoleId?: string; // Search Console Site URL (e.g. https://www.example.com/ or sc-domain:example.com)
+  superAdminNote?: string;
   aiConfig?: {
     openRouterApiKey?: string;
     systemPrompt?: string;
@@ -131,6 +132,7 @@ const GlobalSettingsSchema: Schema<IGlobalSettings> = new Schema(
     googleAnalyticsId: { type: String },
     googleAnalyticsPropertyId: { type: String },
     googleSearchConsoleId: { type: String },
+    superAdminNote: { type: String },
     aiConfig: {
       openRouterApiKey: { type: String, get: decrypt, set: encrypt },
       systemPrompt: { type: String, default: 'You are a helpful e-commerce assistant.' }
