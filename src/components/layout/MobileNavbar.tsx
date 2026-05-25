@@ -2,11 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ShoppingCart, User, LogOut, LayoutDashboard, Truck, Settings, Package } from 'lucide-react';
+import { User, LogOut, LayoutDashboard, Truck, Settings, Package } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useAppSelector } from '@/store/hooks';
-import { CartDrawer } from '@/components/layout/CartDrawer';
 import { MobileMenu } from '@/components/layout/MobileMenu';
 import { Logo } from '@/components/ui/logo';
 import { useSettings } from '@/components/SettingsProvider';
@@ -34,7 +32,7 @@ interface MobileNavbarProps {
 export function MobileNavbar({ navItems, categories }: MobileNavbarProps) {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const { totalQuantity: cartCount } = useAppSelector((state) => state.cart);
+
   const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
@@ -65,23 +63,7 @@ export function MobileNavbar({ navItems, categories }: MobileNavbarProps) {
         {/* Right: Icons */}
         <div className="flex items-center gap-1">
 
-          {/* Cart */}
-          <CartDrawer>
-            <div
-              className="flex items-center gap-1 cursor-pointer hover:text-primary px-2 py-1.5 rounded-full transition-all"
-              aria-label="Shopping Cart"
-              role="button"
-            >
-              <div className="relative">
-                <ShoppingCart className="h-5 w-5 stroke-[1.5]" />
-                {cartCount > 0 && (
-                  <span className="absolute -top-2 -right-2 h-4 w-4 bg-primary text-white text-[8px] font-black rounded-full flex items-center justify-center animate-in zoom-in">
-                    {cartCount}
-                  </span>
-                )}
-              </div>
-            </div>
-          </CartDrawer>
+
 
           {/* User Account */}
           {status === 'authenticated' && session?.user ? (
