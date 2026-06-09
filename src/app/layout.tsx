@@ -292,11 +292,13 @@ export default async function RootLayout({
             <GoogleTagManager gtmId={settings.googleTagManagerId} />
           )}
 
-          <Suspense fallback={null}>
-            <FacebookPixel
-              pixelId={settings?.metaPixelId || process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID}
-            />
-          </Suspense>
+          {(settings?.metaPixelId || process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID) && (
+            <Suspense fallback={null}>
+              <FacebookPixel
+                pixelId={settings?.metaPixelId || process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID}
+              />
+            </Suspense>
+          )}
 
           {isValidGAId(gaId) && (
             <>

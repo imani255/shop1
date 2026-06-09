@@ -45,7 +45,6 @@ export default function FacebookPixel({
   const sanitizedPixelId = pixelId && /^\d+$/.test(pixelId) ? pixelId : null;
 
   if (!sanitizedPixelId) {
-    console.warn("FacebookPixel: Invalid or missing Pixel ID");
     return null;
   }
 
