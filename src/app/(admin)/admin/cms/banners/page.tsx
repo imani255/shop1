@@ -46,7 +46,7 @@ export default function BannersPage() {
       text: `You are about to delete the banner "${title}". This action cannot be undone!`,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#00D1B2', // janopriyo primary color roughly
+      confirmButtonColor: '#00D1B2', // caremom primary color roughly
       cancelButtonColor: '#d33',
       confirmButtonText: 'Yes, delete it!',
       background: '#fff',

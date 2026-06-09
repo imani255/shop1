@@ -189,8 +189,8 @@ export async function generateMetadata(): Promise<Metadata> {
     return {
       metadataBase: new URL(baseUrl),
       title: {
-        default: settings.metaTitle || settings.brandName || "Janopriyo Shop",
-        template: `%s | ${settings.brandName || "Janopriyo Shop"}`,
+        default: settings.metaTitle || settings.brandName || "Care Mom",
+        template: `%s | ${settings.brandName || "Care Mom"}`,
       },
       description: settings.metaDescription || settings.brandName || "Your ultimate destination for quality products.",
       manifest: '/manifest.json',
@@ -202,21 +202,21 @@ export async function generateMetadata(): Promise<Metadata> {
       appleWebApp: {
         capable: true,
         statusBarStyle: 'default',
-        title: settings.brandName || "Janopriyo Shop",
+        title: settings.brandName || "Care Mom",
       },
       formatDetection: {
         telephone: false,
       },
       openGraph: {
-        title: settings.metaTitle || settings.brandName || "Janopriyo Shop",
+        title: settings.metaTitle || settings.brandName || "Care Mom",
         description: settings.metaDescription || settings.brandName || "Your ultimate destination for quality products.",
         url: baseUrl,
-        siteName: settings.brandName || "Janopriyo Shop",
+        siteName: settings.brandName || "Care Mom",
         type: 'website',
       },
       twitter: {
         card: 'summary_large_image',
-        title: settings.metaTitle || settings.brandName || "Janopriyo Shop",
+        title: settings.metaTitle || settings.brandName || "Care Mom",
         description: settings.metaDescription || settings.brandName || "Your ultimate destination for quality products.",
       },
       verification: {
@@ -233,7 +233,7 @@ export async function generateMetadata(): Promise<Metadata> {
     };
   } catch (error) {
     return {
-      title: "Janopriyo Shop",
+      title: "Care Mom",
       description: "Your ultimate destination for quality products.",
     };
   }

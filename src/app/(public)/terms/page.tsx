@@ -5,8 +5,8 @@ import { Separator } from '@/components/ui/separator';
 import { FileText, ShoppingBag, Truck, UserCheck, Scale, HelpCircle } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Terms & Conditions | Janopriyo Shop',
-  description: 'Understand the terms and conditions for shopping at Janopriyo Shop.',
+  title: 'Terms & Conditions | Care Mom',
+  description: 'Understand the terms and conditions for shopping at Care Mom.',
 };
 
 async function getSettings() {
@@ -15,7 +15,7 @@ async function getSettings() {
     const settings = await GlobalSettings.findOne().lean();
     if (!settings) {
       return {
-        brandName: "Janopriyo Shop",
+        brandName: "Care Mom",
         contact: {
           email: "support@bddukan.shop",
           phone: "+8801234567890"
@@ -26,7 +26,7 @@ async function getSettings() {
   } catch (error) {
     console.error('Error fetching settings for terms page:', error);
     return {
-      brandName: "Janopriyo Shop",
+      brandName: "Care Mom",
       contact: {
         email: "support@bddukan.shop",
         phone: "+8801234567890"

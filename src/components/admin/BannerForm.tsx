@@ -16,10 +16,10 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { 
-  Loader2, 
+import {
+  Loader2,
   ArrowLeft,
-  X 
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ImageUpload } from '@/components/ui/image-upload';
@@ -103,11 +103,11 @@ export function BannerForm({ initialData }: BannerFormProps) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button 
-                type="button" 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => router.back()}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => router.back()}
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -160,7 +160,7 @@ export function BannerForm({ initialData }: BannerFormProps) {
                       <FormItem>
                         <FormLabel>Primary Button Link</FormLabel>
                         <FormControl>
-                          <Input placeholder="https://janopriyoshop.com/shop" {...field} />
+                          <Input placeholder="https://example.com/shop" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -245,9 +245,9 @@ export function BannerForm({ initialData }: BannerFormProps) {
                     render={({ field }) => (
                       <FormItem>
                         <FormControl>
-                          <ImageUpload 
+                          <ImageUpload
                             value={field.value}
-                            onUpload={(url) => field.onChange(url)} 
+                            onUpload={(url) => field.onChange(url)}
                             className="aspect-[21/9] w-full"
                           />
                         </FormControl>

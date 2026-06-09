@@ -5,8 +5,8 @@ import { Separator } from '@/components/ui/separator';
 import { ShieldCheck, Info, Share2, Lock, Eye, Bell } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy | Janopriyo Shop',
-  description: 'Learn how Janopriyo Shop collects, uses, and protects your personal information.',
+  title: 'Privacy Policy | Care Mom',
+  description: 'Learn how Care Mom collects, uses, and protects your personal information.',
 };
 
 async function getSettings() {
@@ -15,7 +15,7 @@ async function getSettings() {
     const settings = await GlobalSettings.findOne().lean();
     if (!settings) {
       return {
-        brandName: "Janopriyo Shop",
+        brandName: "Care Mom",
         contact: {
           email: "support@bddukan.shop"
         }
@@ -25,7 +25,7 @@ async function getSettings() {
   } catch (error) {
     console.error('Error fetching settings for privacy page:', error);
     return {
-      brandName: "Janopriyo Shop",
+      brandName: "Care Mom",
       contact: {
         email: "support@bddukan.shop"
       }

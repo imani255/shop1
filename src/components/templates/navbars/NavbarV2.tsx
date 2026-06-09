@@ -162,8 +162,8 @@ export default function NavbarV2() {
             />
 
             <Link href="/" className={`text-2xl md:text-3xl font-black tracking-tighter hover:scale-105 transition-all flex items-center gap-2 group ${!isHomePage || isScrolled ? 'text-foreground' : 'text-white'}`}>
-              <Image src="/logo.webp" width={40} height={40} alt="Janopriyo Shop Logo" className="object-contain" />
-              {settings?.brandName || 'Janopriyo Shop'}
+              <Image src="/logo.webp" width={40} height={40} alt="Care Mom Logo" className="object-contain" />
+              {settings?.brandName || 'Care Mom'}
             </Link>
           </div>
 

@@ -1,7 +1,7 @@
 import { MarketingForm } from "@/components/admin/MarketingForm";
 
 export const metadata = {
-  title: "Marketing Dashboard | Janopriyo Shop",
+  title: "Marketing Dashboard | Care Mom",
   description: "Manage SEO, Google Tag Manager, Search Console, and Meta Pixel settings",
 };
 
