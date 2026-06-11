@@ -17,7 +17,7 @@ export const proxy = auth(async (req) => {
     if (role === "admin" || role === "super_admin") {
       return NextResponse.redirect(new URL("/admin/dashboard", nextUrl));
     }
-    return NextResponse.redirect(new URL("/dashboard", nextUrl));
+    return NextResponse.redirect(new URL("/", nextUrl));
   }
 
   // 2. Protection for Admin routes
@@ -28,7 +28,7 @@ export const proxy = auth(async (req) => {
 
     // Only allow admin/super_admin on admin routes
     if (role !== "admin" && role !== "super_admin") {
-      return NextResponse.redirect(new URL("/dashboard", nextUrl));
+      return NextResponse.redirect(new URL("/", nextUrl));
     }
 
     // /admin/system-design → strictly super_admin
@@ -36,6 +36,11 @@ export const proxy = auth(async (req) => {
     if (isSystemDesignRoute && role !== "super_admin") {
       return NextResponse.redirect(new URL("/admin/dashboard", nextUrl));
     }
+  }
+
+  // 3. Redirect /dashboard route to home page / for users
+  if (nextUrl.pathname === "/dashboard" || nextUrl.pathname.startsWith("/dashboard/")) {
+    return NextResponse.redirect(new URL("/", nextUrl));
   }
 
   req.headers.set('x-pathname', nextUrl.pathname);
