@@ -17,7 +17,7 @@ async function getSettings() {
       return {
         brandName: "Care Mom",
         contact: {
-          email: "support@bddukan.shop",
+          email: "support@caremombd.com",
           phone: "+8801234567890"
         }
       };
@@ -28,7 +28,7 @@ async function getSettings() {
     return {
       brandName: "Care Mom",
       contact: {
-        email: "support@bddukan.shop",
+        email: "support@caremombd.com",
         phone: "+8801234567890"
       }
     };
@@ -38,7 +38,7 @@ async function getSettings() {
 export default async function TermsPage() {
   const settings = await getSettings();
   const brandName = settings.brandName || "RPL Market";
-  const contactEmail = settings.contact?.email || "support@bddukan.shop";
+  const contactEmail = settings.contact?.email || "support@caremombd.com";
   const lastUpdated = "April 04, 2026";
 
   return (

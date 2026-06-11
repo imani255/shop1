@@ -17,7 +17,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Truck } from 'lucide-react';
+import { Loader2, Truck, CreditCard, Globe, X, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ImageUpload } from '@/components/ui/image-upload';
 import {
@@ -90,6 +90,55 @@ const settingsSchema = z.object({
     bodyFont: z.string().default('inter'),
     layout: z.string().default('v1'),
   }).optional(),
+  paymentConfig: z.object({
+    activeMethod: z.string().default('none'),
+    sslcommerz: z.object({
+      storeId: z.string().nullish().transform(val => val ?? ''),
+      storePassword: z.string().nullish().transform(val => val ?? ''),
+      isSandbox: z.boolean().default(true),
+    }).nullable().optional(),
+  }).optional(),
+  manualPaymentConfig: z.object({
+    bkash: z.object({
+      number: z.string().default(''),
+      qrCode: z.string().nullish().transform(val => val ?? ''),
+      active: z.boolean().default(false),
+    }).nullable().optional(),
+    nagad: z.object({
+      number: z.string().default(''),
+      qrCode: z.string().nullish().transform(val => val ?? ''),
+      active: z.boolean().default(false),
+    }).nullable().optional(),
+    rocket: z.object({
+      number: z.string().default(''),
+      qrCode: z.string().nullish().transform(val => val ?? ''),
+      active: z.boolean().default(false),
+    }).nullable().optional(),
+    banglaQr: z.object({
+      qrCode: z.string().nullish().transform(val => val ?? ''),
+      active: z.boolean().default(false),
+    }).nullable().optional(),
+    instructions: z.string().nullish().transform(val => val ?? ''),
+  }).optional(),
+  courierConfig: z.object({
+    activeProvider: z.string().default('none'),
+    steadfast: z.object({
+      apiKey: z.string().nullish().transform(val => val ?? ''),
+      secretKey: z.string().nullish().transform(val => val ?? ''),
+    }).nullable().optional(),
+    pathao: z.object({
+      clientId: z.string().nullish().transform(val => val ?? ''),
+      clientSecret: z.string().nullish().transform(val => val ?? ''),
+      storeId: z.string().nullish().transform(val => val ?? ''),
+    }).nullable().optional(),
+    redx: z.object({
+      apiKey: z.string().nullish().transform(val => val ?? ''),
+    }).nullable().optional(),
+  }).optional(),
+  facebookDomainVerification: z.string().nullish().transform(val => val ?? ''),
+  metaPixelId: z.string().nullish().transform(val => val ?? ''),
+  facebookAccessToken: z.string().nullish().transform(val => val ?? ''),
+  facebookTestEventCode: z.string().nullish().transform(val => val ?? ''),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -129,6 +178,31 @@ export default function SettingsPage() {
         bodyFont: 'inter',
         layout: 'v1',
       },
+      paymentConfig: {
+        activeMethod: 'none',
+        sslcommerz: {
+          storeId: '',
+          storePassword: '',
+          isSandbox: true,
+        },
+      },
+      manualPaymentConfig: {
+        bkash: { number: '', qrCode: '', active: false },
+        nagad: { number: '', qrCode: '', active: false },
+        rocket: { number: '', qrCode: '', active: false },
+        banglaQr: { qrCode: '', active: false },
+        instructions: '',
+      },
+      courierConfig: {
+        activeProvider: 'none',
+        steadfast: { apiKey: '', secretKey: '' },
+        pathao: { clientId: '', clientSecret: '', storeId: '' },
+        redx: { apiKey: '' },
+      },
+      facebookDomainVerification: '',
+      metaPixelId: '',
+      facebookAccessToken: '',
+      facebookTestEventCode: '',
     },
   });
 
@@ -177,6 +251,55 @@ export default function SettingsPage() {
                     bodyFont: result.data.uiTemplates?.bodyFont || 'inter',
                     layout: result.data.uiTemplates?.layout || 'v1',
                   },
+                  paymentConfig: {
+                    activeMethod: result.data.paymentConfig?.activeMethod || 'none',
+                    sslcommerz: {
+                      storeId: result.data.paymentConfig?.sslcommerz?.storeId || '',
+                      storePassword: result.data.paymentConfig?.sslcommerz?.storePassword || '',
+                      isSandbox: result.data.paymentConfig?.sslcommerz?.isSandbox ?? true,
+                    },
+                  },
+                  manualPaymentConfig: {
+                    bkash: {
+                      number: result.data.manualPaymentConfig?.bkash?.number || '',
+                      qrCode: result.data.manualPaymentConfig?.bkash?.qrCode || '',
+                      active: result.data.manualPaymentConfig?.bkash?.active ?? false,
+                    },
+                    nagad: {
+                      number: result.data.manualPaymentConfig?.nagad?.number || '',
+                      qrCode: result.data.manualPaymentConfig?.nagad?.qrCode || '',
+                      active: result.data.manualPaymentConfig?.nagad?.active ?? false,
+                    },
+                    rocket: {
+                      number: result.data.manualPaymentConfig?.rocket?.number || '',
+                      qrCode: result.data.manualPaymentConfig?.rocket?.qrCode || '',
+                      active: result.data.manualPaymentConfig?.rocket?.active ?? false,
+                    },
+                    banglaQr: {
+                      qrCode: result.data.manualPaymentConfig?.banglaQr?.qrCode || '',
+                      active: result.data.manualPaymentConfig?.banglaQr?.active ?? false,
+                    },
+                    instructions: result.data.manualPaymentConfig?.instructions || '',
+                  },
+                  courierConfig: {
+                    activeProvider: result.data.courierConfig?.activeProvider || 'none',
+                    steadfast: {
+                      apiKey: result.data.courierConfig?.steadfast?.apiKey || '',
+                      secretKey: result.data.courierConfig?.steadfast?.secretKey || '',
+                    },
+                    pathao: {
+                      clientId: result.data.courierConfig?.pathao?.clientId || '',
+                      clientSecret: result.data.courierConfig?.pathao?.clientSecret || '',
+                      storeId: result.data.courierConfig?.pathao?.storeId || '',
+                    },
+                    redx: {
+                      apiKey: result.data.courierConfig?.redx?.apiKey || '',
+                    },
+                  },
+                  facebookDomainVerification: result.data.facebookDomainVerification || '',
+                  metaPixelId: result.data.metaPixelId || '',
+                  facebookAccessToken: result.data.facebookAccessToken || '',
+                  facebookTestEventCode: result.data.facebookTestEventCode || '',
               };
               form.reset(sanitizedData);
             }
@@ -248,11 +371,10 @@ export default function SettingsPage() {
       <Form {...form}>
         <form id="settings-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-6 lg:w-[720px]">
+            <TabsList className="grid w-full grid-cols-5 lg:w-[600px]">
               <TabsTrigger value="general">General</TabsTrigger>
               <TabsTrigger value="contact">Contact</TabsTrigger>
               <TabsTrigger value="social">Social</TabsTrigger>
-              <TabsTrigger value="loyalty">Loyalty</TabsTrigger>
               <TabsTrigger value="appearance">Appearance</TabsTrigger>
               <TabsTrigger value="security">Security</TabsTrigger>
             </TabsList>
@@ -503,68 +625,6 @@ export default function SettingsPage() {
               </Card>
             </TabsContent>
 
-
-            <TabsContent value="loyalty" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Loyalty & Rewards System</CardTitle>
-                  <CardDescription>Configure how customers activate their lifetime rewards and the percentage they earn.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={form.control}
-                      name="subscriptionConfig.activationThreshold"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Activation Threshold (TK)</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              placeholder="5000"
-                              {...field}
-                              onChange={(e) => field.onChange(Number(e.target.value))}
-                            />
-                          </FormControl>
-                          <FormDescription>Minimum single order amount to activate lifetime rewards for a user.</FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="subscriptionConfig.rewardPercentage"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Reward Percentage (%)</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              placeholder="5"
-                              {...field}
-                              onChange={(e) => field.onChange(Number(e.target.value))}
-                            />
-                          </FormControl>
-                          <FormDescription>Percentage of purchase total awarded as tokens to active users.</FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="rounded-lg border p-4 bg-primary/5">
-                    <h4 className="text-sm font-bold mb-2">How it works:</h4>
-                    <ul className="text-sm space-y-1 list-disc list-inside text-muted-foreground">
-                      <li>All registered users are enrolled in the loyalty program automatically.</li>
-                      <li>Users become <strong>Active</strong> after a single purchase ≥ {form.watch('subscriptionConfig.activationThreshold')} TK.</li>
-                      <li>Active users earn <strong>{form.watch('subscriptionConfig.rewardPercentage')}%</strong> of every purchase as wallet tokens.</li>
-                      <li>Tokens can be used for discounts on any future purchase.</li>
-                    </ul>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
             <TabsContent value="appearance" className="space-y-4">
               <Card className="border-2 border-primary/10 shadow-none overflow-hidden rounded-3xl">
                 <CardHeader className="bg-primary/5 border-b">
@@ -708,7 +768,7 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
             </TabsContent>
-            
+
             <TabsContent value="security" className="space-y-4">
               <Card>
                 <CardHeader>

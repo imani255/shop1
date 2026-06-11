@@ -5,33 +5,23 @@ import GlobalSettings from '@/models/GlobalSettings';
 import { auth } from '@/auth';
 
 
-// Helper to consistently mask sensitive data in API responses
+// Helper to return settings without masking sensitive data or fallback to environment variables
 const getMaskedSettings = (raw: any, masked: any) => ({
   ...masked,
-  facebookAccessToken: (raw.facebookAccessToken || process.env.FACEBOOK_ACCESS_TOKEN) ? "********************" : null,
+  facebookAccessToken: masked.facebookAccessToken || null,
   courierConfig: masked.courierConfig ? {
     ...masked.courierConfig,
-    steadfast: process.env.STEADFAST_API_KEY ? {
-      apiKey: "********************",
-      secretKey: "********************"
-    } : null,
-    pathao: raw.courierConfig?.pathao?.clientId ? {
-      clientId: "********************",
-      clientSecret: "********************",
-      storeId: "********************"
-    } : masked.courierConfig.pathao,
-    redx: raw.courierConfig?.redx?.apiKey ? { apiKey: "********************" } : masked.courierConfig.redx,
+    steadfast: masked.courierConfig.steadfast || null,
+    pathao: masked.courierConfig.pathao || null,
+    redx: masked.courierConfig.redx || null,
   } : masked.courierConfig,
   paymentConfig: masked.paymentConfig ? {
     ...masked.paymentConfig,
-    sslcommerz: raw.paymentConfig?.sslcommerz?.storePassword ? {
-      ...masked.paymentConfig.sslcommerz,
-      storePassword: "********************"
-    } : masked.paymentConfig.sslcommerz
+    sslcommerz: masked.paymentConfig.sslcommerz || null,
   } : masked.paymentConfig,
   aiConfig: masked.aiConfig ? {
     ...masked.aiConfig,
-    openRouterApiKey: raw.aiConfig?.openRouterApiKey ? "********************" : null
+    openRouterApiKey: masked.aiConfig.openRouterApiKey || null,
   } : masked.aiConfig
 });
 
@@ -44,7 +34,7 @@ export async function GET() {
       return NextResponse.json({
         brandName: process.env.NEXT_PUBLIC_STORE_NAME || "Care Mom",
         contact: {
-          email: "support@bddukan.shop",
+          email: "support@caremombd.com",
           phone: "+8801234567890",
           address: "Dhaka, Bangladesh"
         },
@@ -109,27 +99,27 @@ export async function POST(req: NextRequest) {
       'theme',
       'logoUrl',
       'footerNavigation',
-      'testimonials'
+      'testimonials',
+      'paymentConfig',
+      'manualPaymentConfig',
+      'courierConfig',
+      'facebookDomainVerification',
+      'metaPixelId',
+      'facebookAccessToken',
+      'facebookTestEventCode'
     ];
 
     // Restricted fields - ONLY for super_admin
     const superAdminFields = [
       'uiTemplates',
       'storeId',
-      'paymentConfig',
       'googleAnalyticsId',
       'googleAnalyticsPropertyId',
       'googleSearchConsoleId',
       'aiConfig',
-      'courierConfig',
       'googleTagManagerId',
       'searchConsoleMeta',
-      'facebookDomainVerification',
-      'metaPixelId',
-      'facebookAccessToken',
-      'facebookTestEventCode',
       'saasSubscription',
-      'manualPaymentConfig',
       'superAdminNote'
     ];
 

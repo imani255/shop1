@@ -19,7 +19,7 @@ async function getSettings() {
       return {
         brandName: "Care Mom",
         contact: {
-          email: "support@bddukan.shop",
+          email: "support@caremombd.com",
           phone: "+8801234567890",
           address: "Dhaka, Bangladesh"
         },

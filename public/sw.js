@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bddukan-cache-v1';
+const CACHE_NAME = 'caremom-cache-v1';
 const OFFLINE_URL = '/offline'; 
 
 const ASSETS_TO_CACHE = [
