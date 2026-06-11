@@ -222,6 +222,7 @@ export default function Navbar() {
                   type="button"
                   onClick={handleVoiceSearch}
                   title={isListening ? 'Stop listening' : 'Search by voice'}
+                  aria-label={isListening ? 'Stop listening' : 'Search by voice'}
                   className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isListening ? 'text-red-500 animate-pulse' : 'text-muted-foreground hover:text-primary'}`}
                 >
                   {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}

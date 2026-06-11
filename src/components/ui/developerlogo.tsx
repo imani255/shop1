@@ -13,7 +13,7 @@ const DeveloperLogo = ({ className = "" }: DeveloperLogoProps) => {
       rel="noopener noreferrer"
       className={`flex items-center gap-1.5 group transition-all duration-300 hover:opacity-80 ${className}`}
     >
-      <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+      <span className="text-[10px] text-neutral-600 dark:text-neutral-300 font-medium uppercase tracking-wider">
         Developed by
       </span>
       <div className="flex items-center gap-1">
@@ -26,7 +26,7 @@ const DeveloperLogo = ({ className = "" }: DeveloperLogoProps) => {
         />
         <div className="flex items-baseline font-bold leading-none">
           <span className="text-xs tracking-tight text-foreground">JIA</span>
-          <span className="text-[9px] text-primary ml-0.5">PIXEL</span>
+          <span className="text-[9px] text-foreground/90 font-black ml-0.5">PIXEL</span>
         </div>
       </div>
     </Link>

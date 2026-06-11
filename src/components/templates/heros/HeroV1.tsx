@@ -122,6 +122,7 @@ export default function HeroV1({ banners }: HeroSliderProps) {
                     fill
                     className={`object-cover object-top transition-transform duration-[8000ms] ease-linear ${isActive ? 'scale-110' : 'scale-100'}`}
                     priority={index === 0}
+                    fetchPriority={index === 0 ? "high" : undefined}
                     sizes="100vw"
                   />
                 </div>
@@ -200,33 +201,37 @@ export default function HeroV1({ banners }: HeroSliderProps) {
           <button
             type="button"
             onClick={scrollPrev}
-            className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 z-30 w-6 h-6 sm:w-14 sm:h-14 flex items-center justify-center rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-white opacity-0 group-hover/slider:opacity-100 hover:bg-primary hover:text-white hover:scale-110 active:scale-95 transition-all cursor-pointer"
+            className="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-white opacity-0 group-hover/slider:opacity-100 hover:bg-primary hover:text-white hover:scale-110 active:scale-95 transition-all cursor-pointer animate-none"
             aria-label="Previous slide"
           >
-            <ChevronLeft className="w-3 h-3 sm:w-7 sm:h-7" />
+            <ChevronLeft className="w-4 h-4 sm:w-7 sm:h-7" />
           </button>
           <button
             type="button"
             onClick={scrollNext}
-            className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 z-30 w-6 h-6 sm:w-14 sm:h-14 flex items-center justify-center rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-white opacity-0 group-hover/slider:opacity-100 hover:bg-primary hover:text-white hover:scale-110 active:scale-95 transition-all cursor-pointer"
+            className="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 z-30 w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-white opacity-0 group-hover/slider:opacity-100 hover:bg-primary hover:text-white hover:scale-110 active:scale-95 transition-all cursor-pointer animate-none"
             aria-label="Next slide"
           >
-            <ChevronRight className="w-3 h-3 sm:w-7 sm:h-7" />
+            <ChevronRight className="w-4 h-4 sm:w-7 sm:h-7" />
           </button>
 
           {/* Custom Pagination Container */}
           <div className="absolute bottom-2.5 sm:bottom-12 left-0 w-full z-30 flex justify-center px-4 sm:px-10">
-            <div className="flex items-center gap-1 sm:gap-3">
+            <div className="flex items-center gap-1 sm:gap-2">
               {slides.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => scrollTo(index)}
-                  className={`transition-all duration-300 cursor-pointer rounded-full ${index === activeIndex
-                    ? "w-4 sm:w-10 bg-primary h-1 sm:h-2"
-                    : "w-1 sm:w-2 bg-white/30 h-1 sm:h-2"
-                    }`}
+                  className="transition-all duration-300 cursor-pointer w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10"
                   aria-label={`Go to slide ${index + 1}`}
-                />
+                >
+                  <span
+                    className={`transition-all duration-300 rounded-full h-1.5 sm:h-2 ${index === activeIndex
+                      ? "w-4 sm:w-8 bg-primary"
+                      : "w-1.5 sm:w-2 bg-white/30"
+                      }`}
+                  />
+                </button>
               ))}
             </div>
           </div>

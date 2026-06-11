@@ -181,6 +181,8 @@ export default function NavbarV2() {
               <button
                 type="button"
                 onClick={handleVoiceSearch}
+                title={isListening ? 'Stop listening' : 'Search by voice'}
+                aria-label={isListening ? 'Stop listening' : 'Search by voice'}
                 className={`absolute right-3.5 top-1/2 -translate-y-1/2 transition-colors ${isListening ? 'text-red-500 animate-pulse' : ((!isHomePage || isScrolled) ? 'text-muted-foreground hover:text-primary' : 'text-white/70 hover:text-white')}`}
               >
                 {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
@@ -221,8 +223,8 @@ export default function NavbarV2() {
                 {settings?.aiConfig?.openRouterApiKey && <AIChatbot />}
               </div>
 
-              <Link href="/dashboard/wishlist">
-                <Button variant="ghost" size="icon" className={`rounded-full relative group ${!isHomePage || isScrolled ? 'text-foreground hover:bg-muted' : 'text-white hover:bg-white/10'}`}>
+              <Link href="/dashboard/wishlist" aria-label="Wishlist">
+                <Button variant="ghost" size="icon" aria-label="Wishlist" className={`rounded-full relative group ${!isHomePage || isScrolled ? 'text-foreground hover:bg-muted' : 'text-white hover:bg-white/10'}`}>
                   <Heart className={`h-5 w-5 transition-all ${wishlistCount > 0 ? 'fill-primary text-primary' : ((!isHomePage || isScrolled) ? 'group-hover:text-primary' : 'group-hover:text-white')}`} />
                   {wishlistCount > 0 && (
                     <span className="absolute -top-1 -right-1 h-4 w-4 bg-primary text-[9px] font-black text-white rounded-full flex items-center justify-center animate-in zoom-in">

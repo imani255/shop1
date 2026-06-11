@@ -40,6 +40,7 @@ export default function HeroV3({ banners, onPlay }: HeroV3Props) {
                alt="Hero Background"
                fill
                priority
+               fetchPriority="high"
                className="object-cover scale-110 opacity-60 transition-transform duration-[10s] hover:scale-100"
             />
             <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black" />

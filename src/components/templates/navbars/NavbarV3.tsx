@@ -110,6 +110,7 @@ export default function NavbarV3() {
 
             <Link 
               href="/dashboard/wishlist" 
+              aria-label="Wishlist"
               className="relative hidden sm:block group hover:scale-110 transition-all"
               onClick={(e) => {
                 if (status !== 'authenticated') {

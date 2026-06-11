@@ -169,12 +169,12 @@ export default function ProductCardV6({ product, isFlashSale, priority }: Produc
         {/* Unified Ribbon Badge (Top Left) */}
         {(isFlashSale || discount > 0 || product.isNewArrival || product.isTrending || product.isFeatured) && (
           <div className="absolute top-0 left-0 overflow-hidden w-24 h-24 z-10 pointer-events-none">
-            <div className={`absolute top-0 left-0 text-white text-[10px] font-black py-1 w-32 text-center -rotate-45 -translate-x-10 translate-y-4 shadow-lg uppercase tracking-widest ${
-              isFlashSale ? 'bg-orange-500 animate-pulse' :
-              discount > 0 ? 'bg-primary' :
-              product.isNewArrival ? 'bg-emerald-500' :
-              product.isTrending ? 'bg-rose-500 animate-pulse' :
-              'bg-amber-500'
+            <div className={`absolute top-0 left-0 text-[10px] font-black py-1 w-32 text-center -rotate-45 -translate-x-10 translate-y-4 shadow-lg uppercase tracking-widest ${
+              isFlashSale ? 'bg-orange-600 text-white animate-pulse' :
+              discount > 0 ? 'bg-primary text-black dark:text-neutral-900' :
+              product.isNewArrival ? 'bg-emerald-700 text-white' :
+              product.isTrending ? 'bg-rose-600 text-white animate-pulse' :
+              'bg-amber-400 text-neutral-950'
             }`}>
               {isFlashSale ? 'Flash' :
                discount > 0 ? `${discount}% OFF` :
@@ -238,11 +238,11 @@ export default function ProductCardV6({ product, isFlashSale, priority }: Produc
             <div className="flex items-center justify-center gap-2 mt-2">
             {product.salePrice ? (
                 <>
-                <span className="text-primary font-bold text-sm sm:text-[16px]">৳{Math.round(product.salePrice)}</span>
+                <span className="text-foreground font-black text-sm sm:text-[16px]">৳{Math.round(product.salePrice)}</span>
                 <span className="text-muted-foreground line-through text-[11px] sm:text-[13px] font-normal">৳{Math.round(product.price)}</span>
                 </>
             ) : (
-                <span className="text-primary font-bold text-sm sm:text-[16px]">৳{Math.round(product.price)}</span>
+                <span className="text-foreground font-black text-sm sm:text-[16px]">৳{Math.round(product.price)}</span>
             )}
             </div>
         </div>

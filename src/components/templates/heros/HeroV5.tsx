@@ -53,6 +53,7 @@ export default function HeroV5({ banners }: HeroV5Props) {
                   alt={banner?.title || 'Boutique Banner'} 
                   fill 
                   priority
+                  fetchPriority="high"
                   className="object-cover transition-transform duration-[4s] group-hover:scale-110"
                />
                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />

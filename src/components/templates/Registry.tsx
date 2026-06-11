@@ -1,11 +1,8 @@
-import dynamic from 'next/dynamic';
-
-// --- NAVBARS ---
-const NavbarV1 = dynamic(() => import('./navbars/NavbarV1'));
-const NavbarV2 = dynamic(() => import('./navbars/NavbarV2'));
-const NavbarV3 = dynamic(() => import('./navbars/NavbarV3'));
-const NavbarV4 = dynamic(() => import('./navbars/NavbarV4'));
-const NavbarV5 = dynamic(() => import('./navbars/NavbarV5'));
+import NavbarV1 from './navbars/NavbarV1';
+import NavbarV2 from './navbars/NavbarV2';
+import NavbarV3 from './navbars/NavbarV3';
+import NavbarV4 from './navbars/NavbarV4';
+import NavbarV5 from './navbars/NavbarV5';
 
 export const NavbarSelector = ({ style }: { style: string }) => {
   switch (style) {
@@ -19,11 +16,11 @@ export const NavbarSelector = ({ style }: { style: string }) => {
 };
 
 // --- HEROS ---
-const HeroV1 = dynamic(() => import('./heros/HeroV1'));
-const HeroV2 = dynamic(() => import('./heros/HeroV2'));
-const HeroV3 = dynamic(() => import('./heros/HeroV3'));
-const HeroV4 = dynamic(() => import('./heros/HeroV4'));
-const HeroV5 = dynamic(() => import('./heros/HeroV5'));
+import HeroV1 from './heros/HeroV1';
+import HeroV2 from './heros/HeroV2';
+import HeroV3 from './heros/HeroV3';
+import HeroV4 from './heros/HeroV4';
+import HeroV5 from './heros/HeroV5';
 
 export const HeroSelector = ({ style, banners }: { style: string, banners: any[] }) => {
   switch (style) {
@@ -37,12 +34,12 @@ export const HeroSelector = ({ style, banners }: { style: string, banners: any[]
 };
 
 // --- PRODUCT CARDS ---
-const ProductCardV1 = dynamic(() => import('./product-cards/ProductCardV1'));
-const ProductCardV2 = dynamic(() => import('./product-cards/ProductCardV2'));
-const ProductCardV3 = dynamic(() => import('./product-cards/ProductCardV3'));
-const ProductCardV4 = dynamic(() => import('./product-cards/ProductCardV4'));
-const ProductCardV5 = dynamic(() => import('./product-cards/ProductCardV5'));
-const ProductCardV6 = dynamic(() => import('./product-cards/ProductCardV6'));
+import ProductCardV1 from './product-cards/ProductCardV1';
+import ProductCardV2 from './product-cards/ProductCardV2';
+import ProductCardV3 from './product-cards/ProductCardV3';
+import ProductCardV4 from './product-cards/ProductCardV4';
+import ProductCardV5 from './product-cards/ProductCardV5';
+import ProductCardV6 from './product-cards/ProductCardV6';
 
 export const ProductCardSelector = ({ style, product, isFlashSale, priority }: { style: string, product: any, isFlashSale?: boolean, priority?: boolean }) => {
   switch (style) {
@@ -57,7 +54,7 @@ export const ProductCardSelector = ({ style, product, isFlashSale, priority }: {
 };
 
 // --- CATEGORIES ---
-const CategoryV1 = dynamic(() => import('./categories/CategoryV1'));
+import CategoryV1 from './categories/CategoryV1';
 
 export const CategorySelector = ({ style, categories }: { style: string, categories: any[] }) => {
   switch (style) {

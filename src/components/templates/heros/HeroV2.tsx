@@ -103,6 +103,7 @@ export default function HeroV2({ banners }: HeroSliderProps) {
                     fill
                     className="object-cover"
                     priority={index === 0}
+                    fetchPriority={index === 0 ? "high" : undefined}
                     sizes="100vw"
                   />
                 </motion.div>
@@ -165,17 +166,21 @@ export default function HeroV2({ banners }: HeroSliderProps) {
       </motion.div>
 
       {/* Pagination Dots — bottom right for all devices */}
-      <div className="absolute bottom-8 right-6 sm:bottom-12 sm:right-12 z-30 flex flex-row items-center gap-2 sm:gap-3">
+      <div className="absolute bottom-8 right-6 sm:bottom-12 sm:right-12 z-30 flex flex-row items-center gap-1">
         {slides.map((_, i) => (
           <button
             key={i}
             onClick={() => scrollTo(i)}
-            className={`transition-all duration-300 rounded-full ${i === activeIndex
-                ? "w-8 h-1 sm:w-10 sm:h-1.5 bg-primary shadow-[0_0_10px_rgba(255,0,0,0.5)]"
-                : "w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white/30 hover:bg-white/50"
-              }`}
+            className="transition-all duration-300 w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10"
             aria-label={`Go to slide ${i + 1}`}
-          />
+          >
+            <span
+              className={`transition-all duration-300 rounded-full ${i === activeIndex
+                  ? "w-8 h-1 sm:w-8 sm:h-1.5 bg-primary shadow-[0_0_10px_rgba(255,0,0,0.5)]"
+                  : "w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white/30"
+                }`}
+            />
+          </button>
         ))}
       </div>
 

@@ -31,6 +31,7 @@ export default function HeroV4({ banners }: HeroV4Props) {
               alt={mainBanner.title || 'Strategic Banner'} 
               fill 
               priority
+              fetchPriority="high"
               className="object-cover transition-transform duration-1000 group-hover:scale-110"
            />
            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/30 to-transparent p-12 flex flex-col justify-center">

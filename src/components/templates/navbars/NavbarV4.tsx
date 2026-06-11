@@ -124,6 +124,7 @@ export default function NavbarV4() {
         <div className="flex items-center gap-4 md:gap-8 ml-auto lg:ml-0">
           <Link 
             href="/dashboard/wishlist" 
+            aria-label="Wishlist"
             className="relative group hidden sm:flex items-center gap-3 hover:scale-110 transition-all"
             onClick={(e) => {
               if (status !== 'authenticated') {

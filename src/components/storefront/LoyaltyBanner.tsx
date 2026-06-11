@@ -50,7 +50,7 @@ export function LoyaltyBanner({ settings }: LoyaltyBannerProps) {
                 <Trophy className="h-6 w-6 text-primary" />
               </div>
               <h3 className="font-bold mb-1">Activate</h3>
-              <p className="text-xs text-gray-500">Buy products worth ৳{threshold} in a single order.</p>
+              <p className="text-xs text-neutral-400">Buy products worth ৳{threshold} in a single order.</p>
             </div>
 
             <div className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-primary/50 transition-colors group">
@@ -58,7 +58,7 @@ export function LoyaltyBanner({ settings }: LoyaltyBannerProps) {
                 <Wallet className="h-6 w-6 text-primary" />
               </div>
               <h3 className="font-bold mb-1">Earn Tokens</h3>
-              <p className="text-xs text-gray-500">Get {percentage}% back as tokens on every future order.</p>
+              <p className="text-xs text-neutral-400">Get {percentage}% back as tokens on every future order.</p>
             </div>
 
             <div className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-primary/50 transition-colors group">
@@ -66,7 +66,7 @@ export function LoyaltyBanner({ settings }: LoyaltyBannerProps) {
                 <ArrowRight className="h-6 w-6 text-primary" />
               </div>
               <h3 className="font-bold mb-1">Save Big</h3>
-              <p className="text-xs text-gray-500">Use tokens for instant discounts on your next checkout.</p>
+              <p className="text-xs text-neutral-400">Use tokens for instant discounts on your next checkout.</p>
             </div>
           </div>
         </div>
