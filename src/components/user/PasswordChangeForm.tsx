@@ -27,7 +27,11 @@ const passwordSchema = z.object({
   path: ["confirmNewPassword"],
 });
 
-export function PasswordChangeForm() {
+interface PasswordChangeFormProps {
+  hideHeader?: boolean;
+}
+
+export function PasswordChangeForm({ hideHeader = false }: PasswordChangeFormProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof passwordSchema>>({
@@ -68,12 +72,14 @@ export function PasswordChangeForm() {
 
   return (
     <Card className="max-w-md w-full border-none shadow-none bg-transparent">
-      <CardHeader className="px-0 pt-0">
-        <CardTitle className="text-2xl font-black">Change Password</CardTitle>
-        <CardDescription>
-          Ensure your account is using a long, random password to stay secure.
-        </CardDescription>
-      </CardHeader>
+      {!hideHeader && (
+        <CardHeader className="px-0 pt-0">
+          <CardTitle className="text-2xl font-black">Change Password</CardTitle>
+          <CardDescription>
+            Ensure your account is using a long, random password to stay secure.
+          </CardDescription>
+        </CardHeader>
+      )}
       <CardContent className="px-0">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -118,7 +124,7 @@ export function PasswordChangeForm() {
             <Button 
               type="submit" 
               disabled={isLoading}
-              className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20"
+              className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl transition-all shadow-lg shadow-primary/20"
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Password

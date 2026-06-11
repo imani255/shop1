@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { PasswordChangeForm } from '@/components/user/PasswordChangeForm';
 
 
 const FONT_OPTIONS = [
@@ -247,12 +248,13 @@ export default function SettingsPage() {
       <Form {...form}>
         <form id="settings-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-5 lg:w-[600px]">
+            <TabsList className="grid w-full grid-cols-6 lg:w-[720px]">
               <TabsTrigger value="general">General</TabsTrigger>
               <TabsTrigger value="contact">Contact</TabsTrigger>
               <TabsTrigger value="social">Social</TabsTrigger>
               <TabsTrigger value="loyalty">Loyalty</TabsTrigger>
               <TabsTrigger value="appearance">Appearance</TabsTrigger>
+              <TabsTrigger value="security">Security</TabsTrigger>
             </TabsList>
 
             <TabsContent value="general" className="space-y-4">
@@ -703,6 +705,18 @@ export default function SettingsPage() {
                       </p>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="security" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Security Settings</CardTitle>
+                  <CardDescription>Update your password and manage account security.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 max-w-md">
+                  <PasswordChangeForm hideHeader={true} />
                 </CardContent>
               </Card>
             </TabsContent>
