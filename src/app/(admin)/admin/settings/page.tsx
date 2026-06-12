@@ -368,17 +368,17 @@ export default function SettingsPage() {
         </Button>
       </div>
 
-      <Form {...form}>
-        <form id="settings-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-5 lg:w-[600px]">
-              <TabsTrigger value="general">General</TabsTrigger>
-              <TabsTrigger value="contact">Contact</TabsTrigger>
-              <TabsTrigger value="social">Social</TabsTrigger>
-              <TabsTrigger value="appearance">Appearance</TabsTrigger>
-              <TabsTrigger value="security">Security</TabsTrigger>
-            </TabsList>
+      <Tabs defaultValue="general" className="w-full">
+        <TabsList className="grid w-full grid-cols-5 lg:w-[600px]">
+          <TabsTrigger value="general">General</TabsTrigger>
+          <TabsTrigger value="contact">Contact</TabsTrigger>
+          <TabsTrigger value="social">Social</TabsTrigger>
+          <TabsTrigger value="appearance">Appearance</TabsTrigger>
+          <TabsTrigger value="security">Security</TabsTrigger>
+        </TabsList>
 
+        <Form {...form}>
+          <form id="settings-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 mt-4">
             <TabsContent value="general" className="space-y-4">
               <Card>
                 <CardHeader>
@@ -768,21 +768,21 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
             </TabsContent>
+          </form>
+        </Form>
 
-            <TabsContent value="security" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Security Settings</CardTitle>
-                  <CardDescription>Update your password and manage account security.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4 max-w-md">
-                  <PasswordChangeForm hideHeader={true} />
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </form>
-      </Form>
+        <TabsContent value="security" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Security Settings</CardTitle>
+              <CardDescription>Update your password and manage account security.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 max-w-md">
+              <PasswordChangeForm hideHeader={true} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
