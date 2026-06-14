@@ -106,7 +106,8 @@ export async function POST(req: NextRequest) {
       'facebookDomainVerification',
       'metaPixelId',
       'facebookAccessToken',
-      'facebookTestEventCode'
+      'facebookTestEventCode',
+      'googleTagManagerId'
     ];
 
     // Restricted fields - ONLY for super_admin
@@ -117,7 +118,6 @@ export async function POST(req: NextRequest) {
       'googleAnalyticsPropertyId',
       'googleSearchConsoleId',
       'aiConfig',
-      'googleTagManagerId',
       'searchConsoleMeta',
       'saasSubscription',
       'superAdminNote'

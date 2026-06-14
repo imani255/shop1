@@ -84,6 +84,7 @@ const marketingSettingsSchema = z.object({
   metaPixelId: z.string().nullish().transform(val => val ?? ''),
   facebookAccessToken: z.string().nullish().transform(val => val ?? ''),
   facebookTestEventCode: z.string().nullish().transform(val => val ?? ''),
+  googleTagManagerId: z.string().nullish().transform(val => val ?? ''),
 });
 
 type MarketingSettingsFormValues = z.infer<typeof marketingSettingsSchema>;
@@ -126,6 +127,7 @@ export default function MarketingSettingsPage() {
       metaPixelId: '',
       facebookAccessToken: '',
       facebookTestEventCode: '',
+      googleTagManagerId: '',
     },
   });
 
@@ -197,6 +199,7 @@ export default function MarketingSettingsPage() {
                 metaPixelId: result.data.metaPixelId || '',
                 facebookAccessToken: result.data.facebookAccessToken || '',
                 facebookTestEventCode: result.data.facebookTestEventCode || '',
+                googleTagManagerId: result.data.googleTagManagerId || '',
               };
               form.reset(sanitizedData);
             }
@@ -614,6 +617,22 @@ export default function MarketingSettingsPage() {
                   <CardDescription>Configure Meta Pixel and tracking integrations.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-6 space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="googleTagManagerId"
+                    render={({ field }) => (
+                      <FormItem className="space-y-2">
+                        <FormLabel className="font-bold text-xs">GTM ID (Tag Manager)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="GTM-XXXXXXX" {...field} className="h-12 rounded-xl" />
+                        </FormControl>
+                        <FormDescription>
+                          Container ID for GA, Ads, and other tags.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name="metaPixelId"
