@@ -45,12 +45,11 @@ export function MobileBottomNavbar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center justify-center gap-1 min-w-[64px] transition-all ${
+                className={`flex flex-col items-center justify-center gap-1 min-w-[64px] transition-all relative ${
                   isActive ? 'text-primary scale-110' : 'text-muted-foreground'
                 }`}
               >
                 <Icon className={`h-5 w-5 ${isActive ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
-                <span className="text-[10px] font-bold uppercase tracking-wider">{item.label}</span>
                 {isActive && (
                   <motion.div
                     layoutId="bottom-nav-indicator"
@@ -73,7 +72,6 @@ export function MobileBottomNavbar() {
                   </span>
                 )}
               </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider">Cart</span>
             </div>
           </CartDrawer>
 
@@ -83,7 +81,6 @@ export function MobileBottomNavbar() {
             className="flex flex-col items-center justify-center gap-1 min-w-[64px] text-muted-foreground active:scale-95 transition-transform"
           >
             <Search className="h-5 w-5 stroke-[1.5]" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">Search</span>
           </button>
 
           {/* Account Item */}
@@ -94,7 +91,6 @@ export function MobileBottomNavbar() {
             } active:scale-95 transition-transform`}
           >
             <User className={`h-5 w-5 ${pathname === accountHref ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
-            <span className="text-[10px] font-bold uppercase tracking-wider">Account</span>
             {pathname === accountHref && (
               <motion.div
                 layoutId="bottom-nav-indicator"

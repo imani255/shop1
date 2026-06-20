@@ -215,7 +215,7 @@ export default function LandingPageBuilder({ params }: { params: Promise<{ id: s
         </aside>
 
         {/* Center Canvas */}
-        <main className="flex-1 overflow-y-auto bg-gray-100/50 p-8 flex justify-center">
+        <main className="flex-1 overflow-y-auto bg-gray-100/50 p-8 flex justify-center items-start">
           <div className={`${previewMode === 'mobile' ? 'w-[375px] h-fit min-h-[667px]' : 'w-full max-w-4xl'} bg-white shadow-2xl transition-all duration-300 rounded-lg overflow-hidden flex flex-col`}>
             {sections.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center py-20 text-center space-y-4 px-10">

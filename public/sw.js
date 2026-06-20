@@ -86,7 +86,40 @@ self.addEventListener('fetch', (event) => {
           return caches.match(event.request).then((cachedResponse) => {
             if (cachedResponse) return cachedResponse;
             return caches.match(OFFLINE_URL).then((offlineResponse) => {
-              return offlineResponse || caches.match('/');
+              if (offlineResponse) return offlineResponse;
+              return caches.match('/').then((homeResponse) => {
+                if (homeResponse) return homeResponse;
+                // Serve a generic fallback instead of letting the browser fail with an unstyled error page
+                return new Response(
+                  `<!DOCTYPE html>
+                  <html lang="en">
+                  <head>
+                    <meta charset="utf-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1">
+                    <title>Connection Offline</title>
+                    <style>
+                      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; margin: 0; padding: 20px; text-align: center; background: #ffffff; color: #1a1a1a; }
+                      .card { max-width: 400px; padding: 30px; border-radius: 12px; }
+                      h1 { font-size: 24px; font-weight: 800; margin: 0 0 10px 0; }
+                      p { font-size: 15px; color: #666666; margin: 0 0 24px 0; line-height: 1.5; }
+                      button { background: #000000; color: #ffffff; border: none; padding: 12px 24px; font-size: 15px; font-weight: 600; border-radius: 8px; cursor: pointer; transition: background 0.2s; }
+                      button:hover { background: #333333; }
+                    </style>
+                  </head>
+                  <body>
+                    <div class="card">
+                      <h1>You're Offline</h1>
+                      <p>Please check your internet connection and try reloading the page.</p>
+                      <button onclick="window.location.reload()">Reload</button>
+                    </div>
+                  </body>
+                  </html>`,
+                  {
+                    status: 503,
+                    headers: { 'Content-Type': 'text/html; charset=utf-8' }
+                  }
+                );
+              });
             });
           });
         })

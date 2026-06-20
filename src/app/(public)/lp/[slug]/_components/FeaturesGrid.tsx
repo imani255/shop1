@@ -1,6 +1,29 @@
 'use client'; 
 
-import { Leaf, Truck, ShieldCheck, Zap, Heart, Award } from 'lucide-react';
+import { 
+  Leaf, 
+  Truck, 
+  ShieldCheck, 
+  Zap, 
+  Heart, 
+  Award,
+  Bus,
+  Package,
+  Clock,
+  Phone,
+  MapPin,
+  CreditCard,
+  Gift,
+  ThumbsUp,
+  Star,
+  Sparkles,
+  Percent,
+  Smile,
+  Check,
+  Users,
+  MessageSquare,
+  RefreshCw
+} from 'lucide-react';
 
 const ICONS: any = {
   leaf: Leaf,
@@ -9,6 +32,22 @@ const ICONS: any = {
   zap: Zap,
   heart: Heart,
   award: Award,
+  bus: Bus,
+  package: Package,
+  clock: Clock,
+  phone: Phone,
+  'map-pin': MapPin,
+  'credit-card': CreditCard,
+  gift: Gift,
+  'thumbs-up': ThumbsUp,
+  star: Star,
+  sparkles: Sparkles,
+  percent: Percent,
+  smile: Smile,
+  check: Check,
+  users: Users,
+  'message-square': MessageSquare,
+  'refresh-cw': RefreshCw
 };
 
 export default function FeaturesGrid({ content }: { content: any }) {

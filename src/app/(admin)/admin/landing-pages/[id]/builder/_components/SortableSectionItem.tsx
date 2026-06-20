@@ -2,15 +2,39 @@
 
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Trash2, Settings, Code } from 'lucide-react';
+import { GripVertical, Trash2, Code } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+
+// Import actual components for real-time canvas rendering
+import HeroSection from '@/app/(public)/lp/[slug]/_components/HeroSection';
+import ProductShowcase from '@/app/(public)/lp/[slug]/_components/ProductShowcase';
+import FeaturesGrid from '@/app/(public)/lp/[slug]/_components/FeaturesGrid';
+import OrderForm from '@/app/(public)/lp/[slug]/_components/OrderForm';
+import TestimonialsSection from '@/app/(public)/lp/[slug]/_components/TestimonialsSection';
+import VideoSection from '@/app/(public)/lp/[slug]/_components/VideoSection';
+import FAQSection from '@/app/(public)/lp/[slug]/_components/FAQSection';
+import ContentBlock from '@/app/(public)/lp/[slug]/_components/ContentBlock';
 
 interface SortableSectionItemProps {
   section: any;
   isSelected: boolean;
   onSelect: () => void;
   onDelete: () => void;
+}
+
+function getComponent(type: string) {
+  switch (type) {
+    case 'hero': return HeroSection;
+    case 'product_showcase': return ProductShowcase;
+    case 'features': return FeaturesGrid;
+    case 'order_form': return OrderForm;
+    case 'testimonials': return TestimonialsSection;
+    case 'video': return VideoSection;
+    case 'faq': return FAQSection;
+    case 'content_block': return ContentBlock;
+    default: return null;
+  }
 }
 
 export default function SortableSectionItem({ 
@@ -48,6 +72,8 @@ export default function SortableSectionItem({
       default: return 'Generic Section';
     }
   };
+
+  const SectionComponent = getComponent(section.type);
 
   return (
     <div 
@@ -95,41 +121,23 @@ export default function SortableSectionItem({
         </Button>
       </div>
 
-      {/* Actual Content Preview (Simplified) */}
-      <div className="p-12 pointer-events-none select-none overflow-hidden">
-        <div className="flex flex-col items-center justify-center text-center space-y-3 opacity-30 grayscale">
-          {section.type === 'hero' && (
-             <div className="space-y-2 w-full max-w-md">
-                <div className="h-8 bg-gray-200 rounded-full w-3/4 mx-auto" />
-                <div className="h-4 bg-gray-200 rounded-full w-full" />
-                <div className="h-10 bg-gray-300 rounded-lg w-32 mx-auto" />
-             </div>
-          )}
-          {section.type === 'product_showcase' && (
-             <div className="flex items-center gap-6 w-full max-w-lg">
-                <div className="h-32 w-32 bg-gray-200 rounded-2xl shrink-0" />
-                <div className="space-y-2 flex-1 text-left">
-                   <div className="h-6 bg-gray-200 rounded-full w-3/4" />
-                   <div className="h-4 bg-gray-200 rounded-full w-full" />
-                   <div className="h-10 bg-gray-300 rounded-lg w-24" />
-                </div>
-             </div>
-          )}
-          {section.type === 'order_form' && (
-             <div className="border-2 border-dashed border-gray-200 rounded-3xl p-6 w-full max-w-sm space-y-3">
-                <div className="h-10 bg-gray-100 rounded-xl" />
-                <div className="h-10 bg-gray-100 rounded-xl" />
-                <div className="h-12 bg-primary/20 rounded-xl" />
-             </div>
-          )}
-          {/* Generic placeholder for others */}
-          {!['hero', 'product_showcase', 'order_form'].includes(section.type) && (
-            <div className="flex flex-col items-center gap-2">
-                <Code className="h-8 w-8 opacity-40" />
-                <span className="text-[10px] font-bold uppercase">{getSectionLabel(section.type)} PREVIEW</span>
-            </div>
-          )}
-        </div>
+      {/* Actual Content Preview (Live Render) */}
+      <div 
+        className={cn("pointer-events-none select-none overflow-hidden", section.styles?.paddingTop || 'py-12')}
+        style={{ backgroundColor: section.styles?.backgroundColor }}
+      >
+        {SectionComponent ? (
+          <SectionComponent 
+            content={section.content} 
+            styles={section.styles} 
+            settings={{ deliveryChargeInsideDhaka: 60, deliveryChargeOutsideDhaka: 120 }}
+          />
+        ) : (
+          <div className="p-12 text-center text-muted-foreground flex flex-col items-center gap-2">
+            <Code className="h-8 w-8 opacity-40" />
+            <span className="text-[10px] font-bold uppercase">{getSectionLabel(section.type)} PREVIEW</span>
+          </div>
+        )}
       </div>
     </div>
   );
