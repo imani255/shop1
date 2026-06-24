@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { QuickViewModal } from './QuickViewModal';
 import { fbEvent } from '@/lib/fpixel';
+import { ttEvent } from '@/lib/tiktok';
 import {
   Tooltip,
   TooltipContent,
@@ -67,7 +68,7 @@ export default function ProductCardV6({ product, isFlashSale, priority }: Produc
       }));
 
       // Track AddToCart
-      fbEvent('AddToCart', {
+      const addToCartPayload = {
         content_name: product.name,
         content_category: product.categories?.[0]?.name || 'Uncategorized',
         content_ids: [product._id],
@@ -75,11 +76,14 @@ export default function ProductCardV6({ product, isFlashSale, priority }: Produc
         value: product.salePrice || product.price,
         currency: 'BDT',
         quantity: 1
-      }, {
+      };
+      const trackingUser = {
         em: session?.user?.email || undefined,
         ph: (session?.user as any)?.phone || undefined,
         fn: session?.user?.name || undefined
-      });
+      };
+      fbEvent('AddToCart', addToCartPayload, trackingUser);
+      ttEvent('AddToCart', addToCartPayload, trackingUser);
 
       toast.success(`${product.name} added to cart`);
     }
@@ -105,7 +109,7 @@ export default function ProductCardV6({ product, isFlashSale, priority }: Produc
     }));
 
     // Track InitiateCheckout
-    fbEvent('InitiateCheckout', {
+    const initiateCheckoutPayload = {
       content_name: product.name,
       content_category: product.categories?.[0]?.name || 'Uncategorized',
       content_ids: [product._id],
@@ -113,11 +117,14 @@ export default function ProductCardV6({ product, isFlashSale, priority }: Produc
       value: product.salePrice || product.price,
       currency: 'BDT',
       quantity: 1
-    }, {
+    };
+    const trackingUser = {
       em: session?.user?.email || undefined,
       ph: (session?.user as any)?.phone || undefined,
       fn: session?.user?.name || undefined
-    });
+    };
+    fbEvent('InitiateCheckout', initiateCheckoutPayload, trackingUser);
+    ttEvent('InitiateCheckout', initiateCheckoutPayload, trackingUser);
 
     router.push('/checkout');
   };
@@ -132,18 +139,21 @@ export default function ProductCardV6({ product, isFlashSale, priority }: Produc
     
     if (!isInWishlist) {
       // Track AddToWishlist
-      fbEvent('AddToWishlist', {
+      const addToWishlistPayload = {
         content_name: product.name,
         content_category: product.categories?.[0]?.name || 'Uncategorized',
         content_ids: [product._id],
         content_type: 'product',
         value: product.salePrice || product.price,
         currency: 'BDT'
-      }, {
+      };
+      const trackingUser = {
         em: session?.user?.email || undefined,
         ph: (session?.user as any)?.phone || undefined,
         fn: session?.user?.name || undefined
-      });
+      };
+      fbEvent('AddToWishlist', addToWishlistPayload, trackingUser);
+      ttEvent('AddToWishlist', addToWishlistPayload, trackingUser);
     }
 
     toast.success(isInWishlist ? 'Removed from wishlist' : 'Added to wishlist');

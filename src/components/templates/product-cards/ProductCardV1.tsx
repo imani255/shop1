@@ -23,6 +23,7 @@ import {
 import { useState } from 'react';
 import { QuickViewModal } from './QuickViewModal';
 import { fbEvent } from '@/lib/fpixel';
+import { ttEvent } from '@/lib/tiktok';
 import {
   Tooltip,
   TooltipContent,
@@ -85,7 +86,7 @@ export default function ProductCardV1({ product, isFlashSale }: ProductCardProps
     }));
 
     // Track AddToCart
-    fbEvent('AddToCart', {
+    const addToCartPayload = {
       content_name: product.name,
       content_category: product.categories?.[0]?.name || 'Uncategorized',
       content_ids: [product._id],
@@ -93,7 +94,9 @@ export default function ProductCardV1({ product, isFlashSale }: ProductCardProps
       value: displaySalePrice ?? displayPrice,
       currency: 'BDT',
       quantity: 1
-    });
+    };
+    fbEvent('AddToCart', addToCartPayload);
+    ttEvent('AddToCart', addToCartPayload);
 
     toast.success(`${product.name} added to cart`);
   };
@@ -128,14 +131,16 @@ export default function ProductCardV1({ product, isFlashSale }: ProductCardProps
 
       if (willBeInWishlist) {
         // Track AddToWishlist
-        fbEvent('AddToWishlist', {
+        const addToWishlistPayload = {
           content_name: product.name,
           content_category: product.categories?.[0]?.name || 'Uncategorized',
           content_ids: [product._id],
           content_type: 'product',
           value: product.salePrice ?? product.price,
           currency: 'BDT'
-        });
+        };
+        fbEvent('AddToWishlist', addToWishlistPayload);
+        ttEvent('AddToWishlist', addToWishlistPayload);
       }
     } catch (err) {
       console.error('API toggle error:', err);

@@ -30,6 +30,8 @@ const marketingSchema = z.object({
   facebookAccessToken: z.string().optional(),
   facebookDomainVerification: z.string().optional(),
   facebookTestEventCode: z.string().optional(),
+  tiktokPixelId: z.string().optional(),
+  tiktokAccessToken: z.string().optional(),
 });
 
 type MarketingFormValues = z.infer<typeof marketingSchema>;
@@ -54,6 +56,8 @@ export function MarketingForm() {
       facebookAccessToken: '',
       facebookDomainVerification: '',
       facebookTestEventCode: '',
+      tiktokPixelId: '',
+      tiktokAccessToken: '',
     },
   });
 
@@ -83,6 +87,8 @@ export function MarketingForm() {
             facebookAccessToken: data.facebookAccessToken || '',
             facebookDomainVerification: data.facebookDomainVerification || '',
             facebookTestEventCode: data.facebookTestEventCode || '',
+            tiktokPixelId: data.tiktokPixelId || '',
+            tiktokAccessToken: data.tiktokAccessToken || '',
           });
         }
       } catch (error: any) {
@@ -315,6 +321,45 @@ export function MarketingForm() {
                     </FormItem>
                   )}
                 />
+              </div>
+
+              <div className="border-t pt-6 space-y-6">
+                <h3 className="text-lg font-medium text-foreground">TikTok Tracking</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="tiktokPixelId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>TikTok Pixel ID</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. C1234567890" {...field} disabled={isSubmitting} />
+                        </FormControl>
+                        <FormDescription>
+                          TikTok Pixel ID for browser tracking.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="tiktokAccessToken"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>TikTok Access Token (Events API)</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="tt_..." {...field} disabled={isSubmitting} />
+                        </FormControl>
+                        <FormDescription>
+                          TikTok developer access token for server-side Events API tracking.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
 
               <Button type="submit" className="w-full md:w-auto" disabled={isSubmitting}>

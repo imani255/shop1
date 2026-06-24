@@ -42,6 +42,7 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import Swal from 'sweetalert2';
 import PrintableInvoice from '@/components/admin/PrintableInvoice';
+import PrintableStickerInvoice from '@/components/admin/PrintableStickerInvoice';
 import { generateInvoicePDF } from '@/lib/invoice-generator';
 
 
@@ -62,6 +63,7 @@ export default function OrdersPage() {
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [printingOrders, setPrintingOrders] = useState<any[]>([]);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [printType, setPrintType] = useState<'invoice' | 'sticker'>('invoice');
   const [settings, setSettings] = useState<any>(null);
 
   const handleDownloadInvoice = async (order: any) => {
@@ -80,10 +82,34 @@ export default function OrdersPage() {
       return;
     }
 
+    setPrintType('invoice');
     setPrintingOrders(toPrint);
     setIsPrinting(true);
 
     toast.info('Preparing invoices...');
+
+    // Use requestAnimationFrame to ensure rendering is complete
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.print();
+        setIsPrinting(false);
+        setPrintingOrders([]);
+      });
+    });
+  };
+
+  const handlePrintStickers = (ids: string[]) => {
+    const toPrint = orders.filter(o => ids.includes(o._id));
+    if (toPrint.length === 0) {
+      toast.error('No orders found to print');
+      return;
+    }
+
+    setPrintType('sticker');
+    setPrintingOrders(toPrint);
+    setIsPrinting(true);
+
+    toast.info('Preparing sticker invoices...');
 
     // Use requestAnimationFrame to ensure rendering is complete
     requestAnimationFrame(() => {
@@ -563,6 +589,15 @@ export default function OrdersPage() {
               <Button
                 variant="outline"
                 size="sm"
+                className="bg-white text-primary hover:bg-white/90"
+                onClick={() => handlePrintStickers(selectedIds)}
+              >
+                <Printer className="mr-2 h-3 w-3" /> Print Stickers
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
                 className="bg-orange-500 text-white hover:bg-orange-600 border-none"
                 onClick={() => handleSendToSteadfast(selectedIds)}
               >
@@ -744,6 +779,12 @@ export default function OrdersPage() {
                             <DropdownMenuItem onClick={() => handleDownloadInvoice(order)}>
                               <FileText className="mr-2 h-4 w-4 text-primary" /> Download Invoice
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handlePrint([order._id])}>
+                              <Printer className="mr-2 h-4 w-4 text-primary" /> Print Invoice
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handlePrintStickers([order._id])}>
+                              <Printer className="mr-2 h-4 w-4 text-primary" /> Print Sticker Invoice
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleSendToSteadfast([order._id])} disabled={!!order.shippingDetails?.consignmentId}>
                               <Truck className="mr-2 h-4 w-4 text-orange-500" /> Send to Steadfast
                             </DropdownMenuItem>
@@ -784,7 +825,11 @@ export default function OrdersPage() {
       {/* Hidden Printable Area */}
       <div className="hidden print:block fixed inset-0 z-[9999] bg-white overflow-auto">
         {printingOrders.map((order) => (
-          <PrintableInvoice key={order._id} order={order} />
+          printType === 'invoice' ? (
+            <PrintableInvoice key={order._id} order={order} />
+          ) : (
+            <PrintableStickerInvoice key={order._id} order={order} settings={settings} />
+          )
         ))}
       </div>
 

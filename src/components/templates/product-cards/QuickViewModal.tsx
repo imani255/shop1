@@ -12,6 +12,7 @@ import { useAppDispatch } from '@/store/hooks';
 import { addToCart } from '@/store/slices/cartSlice';
 import { toast } from 'sonner';
 import { fbEvent } from '@/lib/fpixel';
+import { ttEvent } from '@/lib/tiktok';
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
 
@@ -74,18 +75,21 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
       setActiveImage(product.images?.[0] || '/placeholder.jpg');
 
       // Track ViewContent for Quick View
-      fbEvent('ViewContent', {
+      const viewContentPayload = {
         content_name: product.name,
         content_category: product.categories?.[0]?.name || 'Uncategorized',
         content_ids: [product._id],
         content_type: 'product',
         value: product.salePrice || product.price,
         currency: 'BDT'
-      }, {
+      };
+      const trackingUser = {
         em: session?.user?.email || undefined,
         ph: (session?.user as any)?.phone || undefined,
         fn: session?.user?.name || undefined
-      });
+      };
+      fbEvent('ViewContent', viewContentPayload, trackingUser);
+      ttEvent('ViewContent', viewContentPayload, trackingUser);
     }
   }, [isOpen, uniqueColors, product.variants, product.images, session]);
 
@@ -121,7 +125,7 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
     }));
 
     // Track AddToCart
-    fbEvent('AddToCart', {
+    const addToCartPayload = {
       content_name: product.name,
       content_category: product.categories?.[0]?.name || 'Uncategorized',
       content_ids: [product._id],
@@ -129,11 +133,14 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
       value: (displaySalePrice ?? displayPrice) * quantity,
       currency: 'BDT',
       quantity: quantity
-    }, {
+    };
+    const trackingUser = {
       em: session?.user?.email || undefined,
       ph: (session?.user as any)?.phone || undefined,
       fn: session?.user?.name || undefined
-    });
+    };
+    fbEvent('AddToCart', addToCartPayload, trackingUser);
+    ttEvent('AddToCart', addToCartPayload, trackingUser);
 
     if (redirect) {
       router.push('/checkout');
@@ -336,14 +343,16 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
 
               <button 
                 onClick={() => {
-                  fbEvent('AddToWishlist', {
+                  const addToWishlistPayload = {
                     content_name: product.name,
                     content_category: product.categories?.[0]?.name || 'Uncategorized',
                     content_ids: [product._id],
                     content_type: 'product',
                     value: displaySalePrice ?? displayPrice,
                     currency: 'BDT'
-                  });
+                  };
+                  fbEvent('AddToWishlist', addToWishlistPayload);
+                  ttEvent('AddToWishlist', addToWishlistPayload);
                   toast.success('Added to wishlist');
                 }}
                 className="h-12 w-12 flex items-center justify-center border border-gray-200 rounded-none hover:bg-gray-50 hover:border-gray-900 transition-all"

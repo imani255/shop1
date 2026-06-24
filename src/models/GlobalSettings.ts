@@ -29,6 +29,8 @@ export interface IGlobalSettings extends Document {
   metaPixelId?: string;
   facebookAccessToken?: string;
   facebookTestEventCode?: string;
+  tiktokPixelId?: string;
+  tiktokAccessToken?: string;
   courierConfig?: {
     activeProvider?: 'steadfast' | 'pathao' | 'redx' | 'none';
     steadfast?: {
@@ -125,6 +127,8 @@ const GlobalSettingsSchema: Schema<IGlobalSettings> = new Schema(
     metaPixelId: { type: String },
     facebookAccessToken: { type: String, get: decrypt, set: encrypt },
     facebookTestEventCode: { type: String },
+    tiktokPixelId: { type: String },
+    tiktokAccessToken: { type: String, get: decrypt, set: encrypt },
     courierConfig: { type: Object, default: { activeProvider: 'none' } },
     subscriptionConfig: { type: Object, default: { activationThreshold: 5000, rewardPercentage: 5 } },
     paymentConfig: { type: Object, default: { activeMethod: 'none' } },
@@ -179,6 +183,7 @@ const GlobalSettingsSchema: Schema<IGlobalSettings> = new Schema(
         }
         // Security: Remove sensitive Facebook Access Token
         delete ret.facebookAccessToken;
+        delete ret.tiktokAccessToken;
         return ret;
       }
     },

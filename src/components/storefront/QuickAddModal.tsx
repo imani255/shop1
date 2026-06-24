@@ -14,6 +14,7 @@ import { useAppDispatch } from '@/store/hooks';
 import { addToCart } from '@/store/slices/cartSlice';
 import { toast } from 'sonner';
 import { fbEvent } from '@/lib/fpixel';
+import { ttEvent } from '@/lib/tiktok';
 
 interface QuickAddModalProps {
   product: any;
@@ -67,14 +68,16 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
       setSelectedSize(initialSize);
 
       // Track ViewContent for Quick View
-      fbEvent('ViewContent', {
+      const viewContentPayload = {
         content_name: product.name,
         content_category: product.categories?.[0]?.name || 'Uncategorized',
         content_ids: [product._id],
         content_type: 'product',
         value: product.salePrice || product.price,
         currency: 'BDT'
-      });
+      };
+      fbEvent('ViewContent', viewContentPayload);
+      ttEvent('ViewContent', viewContentPayload);
     }
   }, [isOpen, uniqueColors, product.variants]);
 
@@ -110,7 +113,7 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
     }));
 
     // Track AddToCart
-    fbEvent('AddToCart', {
+    const addToCartPayload = {
       content_name: product.name,
       content_category: product.categories?.[0]?.name || 'Uncategorized',
       content_ids: [product._id],
@@ -118,7 +121,9 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
       value: displaySalePrice || displayPrice,
       currency: 'BDT',
       quantity: 1
-    });
+    };
+    fbEvent('AddToCart', addToCartPayload);
+    ttEvent('AddToCart', addToCartPayload);
 
     toast.success(`${product.name} added to cart`);
     onClose();

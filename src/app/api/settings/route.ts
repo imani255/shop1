@@ -9,6 +9,7 @@ import { auth } from '@/auth';
 const getMaskedSettings = (raw: any, masked: any) => ({
   ...masked,
   facebookAccessToken: masked.facebookAccessToken || null,
+  tiktokAccessToken: masked.tiktokAccessToken || null,
   courierConfig: masked.courierConfig ? {
     ...masked.courierConfig,
     steadfast: masked.courierConfig.steadfast || null,
@@ -107,6 +108,8 @@ export async function POST(req: NextRequest) {
       'metaPixelId',
       'facebookAccessToken',
       'facebookTestEventCode',
+      'tiktokPixelId',
+      'tiktokAccessToken',
       'googleTagManagerId'
     ];
 

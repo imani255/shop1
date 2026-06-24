@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { fbEvent } from '@/lib/fpixel';
+import { ttEvent } from '@/lib/tiktok';
 
 import {
   Dialog,
@@ -222,7 +223,7 @@ export default function CheckoutPage() {
       const validItems = items.filter(i => i.productId);
       if (validItems.length === 0) return;
 
-      fbEvent('InitiateCheckout', {
+      const checkoutPayload = {
         content_ids: validItems.map(i => i.productId),
         content_type: 'product',
         value: totalAmount,
@@ -233,7 +234,10 @@ export default function CheckoutPage() {
           quantity: i.quantity,
           item_price: i.price
         }))
-      });
+      };
+
+      fbEvent('InitiateCheckout', checkoutPayload);
+      ttEvent('InitiateCheckout', checkoutPayload);
       hasTrackedInitiate.current = true;
     }
   }, [isHydrated, items, totalAmount]); 

@@ -28,12 +28,13 @@ function SuccessContent() {
 
           // Track Purchase Event
           const { fbEvent } = await import('@/lib/fpixel');
+          const { ttEvent } = await import('@/lib/tiktok');
           
           const safeItems = Array.isArray(orderData.items) ? orderData.items : [];
           const fullName = orderData.shippingAddress?.fullName || '';
           const nameParts = fullName ? fullName.trim().split(/\s+/) : [];
 
-          fbEvent('Purchase', {
+          const customEventData = {
             value: orderData.totalAmount,
             currency: 'BDT',
             content_ids: safeItems.map((i: any) => i.product?._id || i.product),
@@ -44,8 +45,9 @@ function SuccessContent() {
               quantity: i.quantity,
               item_price: i.price
             }))
-          }, {
-            // Note: Hashing is handled server-side in the API route.
+          };
+
+          const userEventData = {
             em: orderData.shippingAddress?.email,
             ph: orderData.shippingAddress?.phone,
             fn: nameParts[0] || '',
@@ -53,7 +55,10 @@ function SuccessContent() {
             ct: orderData.shippingAddress?.city,
             st: orderData.shippingAddress?.state,
             country: 'bd'
-          }, orderData._id); // Use Order ID as eventId for deduplication
+          };
+
+          fbEvent('Purchase', customEventData, userEventData, orderData._id);
+          ttEvent('Purchase', customEventData, userEventData, orderData._id);
         }
       } catch (error) {
         console.error('Failed to fetch order for tracking:', error);

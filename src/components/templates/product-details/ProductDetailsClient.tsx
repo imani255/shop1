@@ -47,6 +47,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { fbEvent } from '@/lib/fpixel';
+import { ttEvent } from '@/lib/tiktok';
 
 const CURRENCY_SYMBOL = '৳';
 
@@ -122,18 +123,22 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
     setQuantity(1);
 
     // Track ViewContent
-    fbEvent('ViewContent', {
+    const viewContentPayload = {
       content_name: product.name,
       content_category: product.categories?.[0]?.name || 'Uncategorized',
       content_ids: [product._id],
       content_type: 'product',
       value: product.salePrice || product.price,
       currency: 'BDT'
-    }, {
+    };
+    const trackingUser = {
       em: session?.user?.email || undefined,
       ph: (session?.user as any)?.phone || undefined,
       fn: session?.user?.name || undefined
-    });
+    };
+
+    fbEvent('ViewContent', viewContentPayload, trackingUser);
+    ttEvent('ViewContent', viewContentPayload, trackingUser);
   }, [product?._id, uniqueColors, product.variants, session]);
 
   // Fetch review eligibility separately to avoid unnecessary re-triggers
@@ -253,7 +258,7 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
     }));
 
     // Track AddToCart
-    fbEvent('AddToCart', {
+    const addToCartPayload = {
       content_name: product.name,
       content_category: product.categories?.[0]?.name || 'Uncategorized',
       content_ids: [product._id],
@@ -261,11 +266,15 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
       value: (displaySalePrice || displayPrice) * finalQuantity,
       currency: 'BDT',
       quantity: finalQuantity
-    }, {
+    };
+    const trackingUser = {
       em: session?.user?.email || undefined,
       ph: (session?.user as any)?.phone || undefined,
       fn: session?.user?.name || undefined
-    });
+    };
+
+    fbEvent('AddToCart', addToCartPayload, trackingUser);
+    ttEvent('AddToCart', addToCartPayload, trackingUser);
 
     toast.success(`Added ${finalQuantity} ${product.name} to cart`);
     return true;
@@ -327,18 +336,22 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
 
       if (willBeInWishlist) {
         // Track AddToWishlist
-        fbEvent('AddToWishlist', {
+        const addToWishlistPayload = {
           content_name: product.name,
           content_category: product.categories?.[0]?.name || 'Uncategorized',
           content_ids: [product._id],
           content_type: 'product',
           value: displaySalePrice || displayPrice,
           currency: 'BDT'
-        }, {
+        };
+        const trackingUser = {
           em: session?.user?.email || undefined,
           ph: (session?.user as any)?.phone || undefined,
           fn: session?.user?.name || undefined
-        });
+        };
+
+        fbEvent('AddToWishlist', addToWishlistPayload, trackingUser);
+        ttEvent('AddToWishlist', addToWishlistPayload, trackingUser);
       }
     } catch (err) {
       console.error('API toggle error:', err);

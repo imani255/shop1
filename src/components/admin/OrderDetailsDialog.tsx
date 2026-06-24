@@ -10,10 +10,12 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, Mail, Phone, MapPin, CreditCard, Calendar, Truck, ExternalLink, FileText } from 'lucide-react';
+import { Loader2, Mail, Phone, MapPin, CreditCard, Calendar, Truck, ExternalLink, FileText, Printer } from 'lucide-react';
 import { format, isValid } from 'date-fns';
 import { toast } from 'sonner';
 import { generateInvoicePDF } from '@/lib/invoice-generator';
+import PrintableInvoice from '@/components/admin/PrintableInvoice';
+import PrintableStickerInvoice from '@/components/admin/PrintableStickerInvoice';
 import Swal from 'sweetalert2';
 import { Button } from '@/components/ui/button';
 
@@ -34,6 +36,18 @@ export default function OrderDetailsDialog({
   const [settings, setSettings] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [localPrintType, setLocalPrintType] = useState<'invoice' | 'sticker' | null>(null);
+
+  const handleLocalPrint = (type: 'invoice' | 'sticker') => {
+    setLocalPrintType(type);
+    toast.info(`Preparing ${type === 'invoice' ? 'invoice' : 'sticker invoice'}...`);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.print();
+        setLocalPrintType(null);
+      });
+    });
+  };
 
   // Additional Shipping Fields
   const [cityId, setCityId] = useState('');
@@ -119,6 +133,21 @@ export default function OrderDetailsDialog({
                     title="Download PDF Invoice"
                   >
                     <FileText className="h-4 w-4" />
+                  </button>
+                  <button 
+                    onClick={() => handleLocalPrint('invoice')}
+                    className="p-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                    title="Print A4 Invoice"
+                  >
+                    <Printer className="h-4 w-4" />
+                  </button>
+                  <button 
+                    onClick={() => handleLocalPrint('sticker')}
+                    className="p-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors flex items-center gap-1 px-2.5 py-1"
+                    title="Print Sticker Invoice"
+                  >
+                    <Printer className="h-4 w-4" />
+                    <span className="text-[10px] font-bold">Sticker</span>
                   </button>
                </div>
             )}
@@ -488,6 +517,15 @@ export default function OrderDetailsDialog({
           </div>
         )}
       </DialogContent>
+      {localPrintType && order && (
+        <div className="hidden print:block fixed inset-0 z-[9999] bg-white overflow-auto">
+          {localPrintType === 'invoice' ? (
+            <PrintableInvoice order={order} />
+          ) : (
+            <PrintableStickerInvoice order={order} settings={settings} />
+          )}
+        </div>
+      )}
     </Dialog>
   );
 }
