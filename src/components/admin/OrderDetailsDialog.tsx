@@ -14,8 +14,7 @@ import { Loader2, Mail, Phone, MapPin, CreditCard, Calendar, Truck, ExternalLink
 import { format, isValid } from 'date-fns';
 import { toast } from 'sonner';
 import { generateInvoicePDF } from '@/lib/invoice-generator';
-import PrintableInvoice from '@/components/admin/PrintableInvoice';
-import PrintableStickerInvoice from '@/components/admin/PrintableStickerInvoice';
+import { printStickerInvoice } from '@/lib/sticker-generator';
 import Swal from 'sweetalert2';
 import { Button } from '@/components/ui/button';
 
@@ -36,17 +35,14 @@ export default function OrderDetailsDialog({
   const [settings, setSettings] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
-  const [localPrintType, setLocalPrintType] = useState<'invoice' | 'sticker' | null>(null);
-
-  const handleLocalPrint = (type: 'invoice' | 'sticker') => {
-    setLocalPrintType(type);
-    toast.info(`Preparing ${type === 'invoice' ? 'invoice' : 'sticker invoice'}...`);
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        window.print();
-        setLocalPrintType(null);
-      });
-    });
+  const handleLocalPrint = async (type: 'invoice' | 'sticker') => {
+    if (type === 'invoice') {
+      toast.info('Generating PDF invoice...');
+      await generateInvoicePDF(order, settings, 'print');
+    } else {
+      toast.info('Preparing sticker invoice...');
+      await printStickerInvoice(order, settings);
+    }
   };
 
   // Additional Shipping Fields
@@ -517,15 +513,7 @@ export default function OrderDetailsDialog({
           </div>
         )}
       </DialogContent>
-      {localPrintType && order && (
-        <div className="hidden print:block fixed inset-0 z-[9999] bg-white overflow-auto">
-          {localPrintType === 'invoice' ? (
-            <PrintableInvoice order={order} />
-          ) : (
-            <PrintableStickerInvoice order={order} settings={settings} />
-          )}
-        </div>
-      )}
+
     </Dialog>
   );
 }

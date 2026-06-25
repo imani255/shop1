@@ -16,7 +16,7 @@ if (fs.existsSync(envPath)) {
 
 if (!mongodbUri) {
   // Fallback if env file doesn't parse correctly
-  mongodbUri = 'mongodb+srv://GOMart:S4Epscw0SOkd5ZtG@cluster0.e5n1hnl.mongodb.net/GOMart';
+  mongodbUri = 'mongodb+srv://caremombd:S4Epscw0SOkd5ZtG@cluster0.e5n1hnl.mongodb.net/caremombd';
 }
 
 console.log('Connecting to MongoDB...');
@@ -115,7 +115,7 @@ async function seed() {
     const insertResult = await Banner.insertMany(banners);
     console.log(`Seeded ${insertResult.length} banners successfully:`);
     insertResult.forEach((b, i) => {
-      console.log(`[Banner ${i+1}] Title: "${b.title}", Image: "${b.image}"`);
+      console.log(`[Banner ${i + 1}] Title: "${b.title}", Image: "${b.image}"`);
     });
 
   } catch (error) {

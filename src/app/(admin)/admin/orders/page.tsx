@@ -41,9 +41,8 @@ import {
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import Swal from 'sweetalert2';
-import PrintableInvoice from '@/components/admin/PrintableInvoice';
-import PrintableStickerInvoice from '@/components/admin/PrintableStickerInvoice';
 import { generateInvoicePDF } from '@/lib/invoice-generator';
+import { printStickerInvoice } from '@/lib/sticker-generator';
 
 
 export default function OrdersPage() {
@@ -61,9 +60,6 @@ export default function OrdersPage() {
   // Selection state
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
-  const [printingOrders, setPrintingOrders] = useState<any[]>([]);
-  const [isPrinting, setIsPrinting] = useState(false);
-  const [printType, setPrintType] = useState<'invoice' | 'sticker'>('invoice');
   const [settings, setSettings] = useState<any>(null);
 
   const handleDownloadInvoice = async (order: any) => {
@@ -75,50 +71,30 @@ export default function OrdersPage() {
     }
   };
 
-  const handlePrint = (ids: string[]) => {
+  const handlePrint = async (ids: string[]) => {
     const toPrint = orders.filter(o => ids.includes(o._id));
     if (toPrint.length === 0) {
       toast.error('No orders found to print');
       return;
     }
-
-    setPrintType('invoice');
-    setPrintingOrders(toPrint);
-    setIsPrinting(true);
-
-    toast.info('Preparing invoices...');
-
-    // Use requestAnimationFrame to ensure rendering is complete
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        window.print();
-        setIsPrinting(false);
-        setPrintingOrders([]);
-      });
-    });
+    toast.info(`Generating ${toPrint.length > 1 ? toPrint.length + ' invoices' : 'invoice'}...`);
+    for (const order of toPrint) {
+      await generateInvoicePDF(order, settings, 'print');
+      if (toPrint.length > 1) await new Promise(r => setTimeout(r, 600));
+    }
   };
 
-  const handlePrintStickers = (ids: string[]) => {
+  const handlePrintStickers = async (ids: string[]) => {
     const toPrint = orders.filter(o => ids.includes(o._id));
     if (toPrint.length === 0) {
       toast.error('No orders found to print');
       return;
     }
-
-    setPrintType('sticker');
-    setPrintingOrders(toPrint);
-    setIsPrinting(true);
-
-    toast.info('Preparing sticker invoices...');
-
-    // Use requestAnimationFrame to ensure rendering is complete
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        window.print();
-        setIsPrinting(false);
-        setPrintingOrders([]);
-      });
-    });
+    toast.info('Preparing sticker invoice...');
+    // Open each sticker as a PDF in its own window - same pattern as invoice
+    for (const order of toPrint) {
+      await printStickerInvoice(order, settings);
+    }
   };
 
   const fetchOrders = async () => {
@@ -821,17 +797,6 @@ export default function OrdersPage() {
         onUpdate={fetchOrders}
       />
 
-      {/* Loading Overlay for Bulk Actions */}
-      {/* Hidden Printable Area */}
-      <div className="hidden print:block fixed inset-0 z-[9999] bg-white overflow-auto">
-        {printingOrders.map((order) => (
-          printType === 'invoice' ? (
-            <PrintableInvoice key={order._id} order={order} />
-          ) : (
-            <PrintableStickerInvoice key={order._id} order={order} settings={settings} />
-          )
-        ))}
-      </div>
 
       {bulkActionLoading && (
         <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm flex items-center justify-center">

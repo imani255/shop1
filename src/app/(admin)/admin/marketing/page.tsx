@@ -85,6 +85,8 @@ const marketingSettingsSchema = z.object({
   facebookAccessToken: z.string().nullish().transform(val => val ?? ''),
   facebookTestEventCode: z.string().nullish().transform(val => val ?? ''),
   googleTagManagerId: z.string().nullish().transform(val => val ?? ''),
+  tiktokPixelId: z.string().nullish().transform(val => val ?? ''),
+  tiktokAccessToken: z.string().nullish().transform(val => val ?? ''),
 });
 
 type MarketingSettingsFormValues = z.infer<typeof marketingSettingsSchema>;
@@ -128,6 +130,8 @@ export default function MarketingSettingsPage() {
       facebookAccessToken: '',
       facebookTestEventCode: '',
       googleTagManagerId: '',
+      tiktokPixelId: '',
+      tiktokAccessToken: '',
     },
   });
 
@@ -200,6 +204,8 @@ export default function MarketingSettingsPage() {
                 facebookAccessToken: result.data.facebookAccessToken || '',
                 facebookTestEventCode: result.data.facebookTestEventCode || '',
                 googleTagManagerId: result.data.googleTagManagerId || '',
+                tiktokPixelId: result.data.tiktokPixelId || '',
+                tiktokAccessToken: result.data.tiktokAccessToken || '',
               };
               form.reset(sanitizedData);
             }
@@ -686,6 +692,38 @@ export default function MarketingSettingsPage() {
                         </FormItem>
                       )}
                     />
+                  </div>
+
+                  <div className="border-t pt-6 mt-6">
+                    <h4 className="font-black text-xs uppercase opacity-50 mb-4">TikTok Pixel & Events API</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="tiktokPixelId"
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <FormLabel className="font-bold text-xs">TikTok Pixel ID</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Enter TikTok Pixel ID" {...field} className="h-12 rounded-xl" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="tiktokAccessToken"
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <FormLabel className="font-bold text-xs">TikTok Access Token</FormLabel>
+                            <FormControl>
+                              <Input type="text" placeholder="Enter Access Token" {...field} className="h-12 rounded-xl" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
