@@ -15,7 +15,8 @@ export async function GET(
   try {
     const { slug } = await params;
     await connectToDatabase();
-    const category = await Category.findOne({ slug });
+    const query = mongoose.Types.ObjectId.isValid(slug) ? { _id: slug } : { slug };
+    const category = await Category.findOne(query);
 
     if (!category) {
       return NextResponse.json({ message: 'Category not found' }, { status: 404 });
@@ -59,8 +60,9 @@ export async function PUT(
 
     await connectToDatabase();
 
+    const query = mongoose.Types.ObjectId.isValid(slug) ? { _id: slug } : { slug };
     const updatedCategory = await Category.findOneAndUpdate(
-      { slug },
+      query,
       { $set: updateData },
       { new: true, runValidators: true }
     );
@@ -95,7 +97,8 @@ export async function DELETE(
     await connectToDatabase();
 
     // 1. Verify existence first
-    const category = await Category.findOne({ slug });
+    const query = mongoose.Types.ObjectId.isValid(slug) ? { _id: slug } : { slug };
+    const category = await Category.findOne(query);
     if (!category) {
       return NextResponse.json({ message: 'Category not found' }, { status: 404 });
     }
