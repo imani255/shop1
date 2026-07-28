@@ -1,13 +1,13 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { Shirt, ShieldCheck, Award, Sparkles, HeartHandshake, ArrowRight } from 'lucide-react';
+import { Baby, ShieldCheck, Award, Sparkles, HeartHandshake, ArrowRight } from 'lucide-react';
 import connectToDatabase from '@/lib/db';
 import GlobalSettings from '@/models/GlobalSettings';
 import { Button } from '@/components/ui/button';
 
 export const metadata: Metadata = {
   title: 'About Us | Care Mom',
-  description: 'Care Mom - Premium menswear brand in Bangladesh. Explore our high-quality collection of T-shirts, Polo Shirts, Casual & Formal Shirts, and Hoodies designed for modern comfort.',
+  description: 'Care Mom - Premium Mother & Baby care brand in Bangladesh. Explore our high-quality collection of baby clothing, maternity essentials, baby gear, organic baby food, and accessories designed for parenting comfort.',
 };
 
 async function getSettings() {
@@ -42,13 +42,13 @@ export default async function AboutPage() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.1),rgba(255,255,255,0))]" />
         <div className="container mx-auto px-4 text-center relative z-10">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary mb-4">
-            <Sparkles className="h-3 w-3" /> Premium Menswear & Streetwear
+            <Sparkles className="h-3 w-3" /> Premium Mother & Baby Essentials
           </span>
           <h1 className="text-4xl md:text-6xl font-black tracking-tight text-foreground mb-6">
             About <span className="text-primary">Us</span>
           </h1>
           <p className="text-muted-foreground text-base md:text-lg max-w-3xl mx-auto leading-relaxed">
-            Driven by a passion for modern aesthetics and ultimate fabric comfort, <strong className="text-primary">{brandName}</strong> delivers premium quality clothing designed for the contemporary lifestyle. From classic polo shirts to cozy hoodies, we redefine casual sophistication.
+            Driven by a passion for gentle care and baby safety, <strong className="text-primary">{brandName}</strong> delivers premium quality mother and baby products designed for modern parenting. From organic cotton clothing to safe feeding accessories, we redefine early childhood care.
           </p>
         </div>
       </section>
@@ -59,11 +59,11 @@ export default async function AboutPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             <div className="p-4 space-y-1">
               <p className="text-3xl md:text-4xl font-extrabold text-primary">100%</p>
-              <p className="text-xs md:text-sm text-muted-foreground font-medium">Premium Combed Cotton</p>
+              <p className="text-xs md:text-sm text-muted-foreground font-medium">Baby-Safe Materials</p>
             </div>
             <div className="p-4 space-y-1">
               <p className="text-3xl md:text-4xl font-extrabold text-primary">10k+</p>
-              <p className="text-xs md:text-sm text-muted-foreground font-medium">Happy Customers</p>
+              <p className="text-xs md:text-sm text-muted-foreground font-medium">Happy Parents</p>
             </div>
             <div className="p-4 space-y-1">
               <p className="text-3xl md:text-4xl font-extrabold text-primary">100%</p>
@@ -83,23 +83,23 @@ export default async function AboutPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
-                Connecting Premium Quality Fabrics with Modern Trends
+                Nurturing Your Little One with Gentle & Safe Products
               </h2>
               <p className="text-muted-foreground text-sm md:text-base leading-relaxed">
-                At Care Mom, we believe that style and comfort should go hand in hand. We curate each piece of apparel—whether it is an everyday t-shirt, a smart polo, a classic shirt, or a cozy hoodie—using top-grade fabric blends that ensure durability, breathability, and a premium feel.
+                At Care Mom, we believe that safety and comfort should go hand in hand. We curate each of our mother and baby essentials—whether it is soft baby clothing, organic diapers, feeding accessories, or developmental toys—using certified non-toxic and hypoallergenic materials that ensure the utmost care.
               </p>
               <p className="text-muted-foreground text-sm md:text-base leading-relaxed">
-                Our materials are ethically sourced and processed under strict quality inspections. By prioritizing advanced stitching techniques, pre-shrunk fabrics, and high-quality dye retention, we ensure you receive long-lasting fashion essentials.
+                Our materials are ethically sourced and processed under strict safety inspections. By prioritizing certified BPA-free plastics, hypoallergenic fabrics, and non-toxic dyes, we ensure you receive the safest essentials for your baby.
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                 <div className="flex gap-4">
                   <div className="h-10 w-10 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                    <Shirt className="h-5 w-5" />
+                    <Baby className="h-5 w-5" />
                   </div>
                   <div>
                     <h4 className="font-bold text-sm mb-1">Our Mission</h4>
-                    <p className="text-xs text-muted-foreground">To deliver premium, comfortable, and trendy fashion essentials that empower men to look and feel their absolute best.</p>
+                    <p className="text-xs text-muted-foreground">To deliver premium, safe, and comfortable baby and maternity essentials that empower mothers and nurture babies' growth.</p>
                   </div>
                 </div>
                 <div className="flex gap-4">
@@ -108,7 +108,7 @@ export default async function AboutPage() {
                   </div>
                   <div>
                     <h4 className="font-bold text-sm mb-1">Our Vision</h4>
-                    <p className="text-xs text-muted-foreground">To become Bangladesh's leading choice for premium casual and streetwear fashion by setting standard benchmarks for clothing quality and customer satisfaction.</p>
+                    <p className="text-xs text-muted-foreground">To become Bangladesh's leading choice for premium mother and baby care products by setting standard benchmarks for safety, quality, and parental trust.</p>
                   </div>
                 </div>
               </div>
@@ -127,7 +127,7 @@ export default async function AboutPage() {
                     Our Slogan
                   </span>
                   <blockquote className="text-lg md:text-xl font-bold leading-relaxed italic">
-                    "Define your style with ultimate comfort and premium craftsmanship."
+                    "Nurture with love, safety, and ultimate comfort."
                   </blockquote>
                   <p className="text-xs text-slate-300 font-medium">
                     — The {brandName} Family
@@ -145,7 +145,7 @@ export default async function AboutPage() {
           <div className="max-w-2xl mx-auto mb-16 space-y-4">
             <h2 className="text-3xl font-bold tracking-tight">Why Choose Us?</h2>
             <p className="text-muted-foreground text-sm">
-              Discover what makes our menswear collection highly durable, stylish, and comfortable.
+              Discover what makes our baby and maternity collection highly safe, comfortable, and trusted.
             </p>
           </div>
 
@@ -156,17 +156,17 @@ export default async function AboutPage() {
               </div>
               <h3 className="text-xl font-bold">100% Premium Quality</h3>
               <p className="text-muted-foreground text-xs leading-relaxed max-w-[280px]">
-                We maintain rigorous quality standards, from choosing top-grade combed yarns to precise stitching.
+                We maintain rigorous safety standards, choosing certified non-toxic, hypoallergenic, and baby-safe materials.
               </p>
             </div>
 
             <div className="bg-background p-8 rounded-2xl border shadow-sm space-y-4 text-center flex flex-col items-center hover:-translate-y-1 transition-all duration-300">
               <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                <Shirt className="h-6 w-6" />
+                <Baby className="h-6 w-6" />
               </div>
-              <h3 className="text-xl font-bold">Premium Fabric Blends</h3>
+              <h3 className="text-xl font-bold">Hypoallergenic & Organic</h3>
               <p className="text-muted-foreground text-xs leading-relaxed max-w-[280px]">
-                Our clothing line features high GSM fabrics, pre-shrunk cotton, and highly durable stitching for long-lasting fit.
+                Our products feature organic fabrics, skin-friendly components, and durable finishes for your baby's delicate skin.
               </p>
             </div>
 
@@ -174,9 +174,9 @@ export default async function AboutPage() {
               <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                 <Award className="h-6 w-6" />
               </div>
-              <h3 className="text-xl font-bold">Trusted Fit & Comfort</h3>
+              <h3 className="text-xl font-bold">Trusted Parental Choice</h3>
               <p className="text-muted-foreground text-xs leading-relaxed max-w-[280px]">
-                Thousands of satisfied fashion-conscious clients across Bangladesh trust Care Mom for their daily wear.
+                Thousands of satisfied parents across Bangladesh trust Care Mom for their babies' daily comfort and safety.
               </p>
             </div>
           </div>
@@ -221,10 +221,10 @@ export default async function AboutPage() {
       <section className="py-20 text-center relative overflow-hidden">
         <div className="container mx-auto px-4 relative z-10 space-y-6">
           <h2 className="text-3xl md:text-5xl font-black tracking-tight max-w-2xl mx-auto leading-tight">
-            Upgrade Your Wardrobe with Care Mom Essentials
+            Nurture Your Little One with Care Mom Essentials
           </h2>
           <p className="text-muted-foreground max-w-lg mx-auto text-sm">
-            Browse our collection today and choose the perfect outfits for your everyday look.
+            Browse our collection today and choose the perfect products for your baby's comfort and growth.
           </p>
           <div className="flex flex-wrap gap-4 justify-center pt-4">
             <Link href="/shop" passHref>

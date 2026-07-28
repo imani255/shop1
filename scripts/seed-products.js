@@ -182,8 +182,8 @@ const productsData = [
     isFlashSale: true
   },
   {
-    name: 'Complete Baby Grooming & Health Kit',
-    slug: 'complete-baby-grooming-health-kit',
+    name: 'Complete Baby Grooming & Care Kit',
+    slug: 'complete-baby-grooming-care-kit',
     description: '10-piece baby grooming kit with safety scissors, clippers, brush, comb, and nasal aspirator. Perfect for maintaining infant hygiene.',
     price: 1400,
     salePrice: 1100,
@@ -256,7 +256,7 @@ const productsData = [
   {
     name: '2-in-1 Smart Baby Food Processor',
     slug: '2-in-1-smart-baby-food-processor',
-    description: 'Multifunctional steam-and-blend baby food maker. Prepares healthy purees in minutes with an intuitive automatic timer.',
+    description: 'Multifunctional steam-and-blend baby food maker. Prepares organic purees in minutes with an intuitive automatic timer.',
     price: 6500,
     purchasePrice: 4200,
     stock: 20,
@@ -326,7 +326,7 @@ const productsData = [
   {
     name: 'Touchscreen Digital Air Fryer',
     slug: 'touchscreen-digital-air-fryer',
-    description: 'Smart touchscreen air fryer with 8 pre-programmed presets. Oil-free convection frying mechanism makes healthy cooking quick and easy.',
+    description: 'Smart touchscreen air fryer with 8 pre-programmed presets. Oil-free convection frying mechanism makes nutritious meal prep quick and easy.',
     price: 9500,
     salePrice: 7900,
     discountRate: 17,

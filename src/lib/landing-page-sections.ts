@@ -41,8 +41,8 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
     description: 'Main banner with headline and CTA',
     icon: 'layout',
     defaultContent: {
-      headline: 'Transform Your Health Naturally',
-      subheadline: 'Discover the power of alternative medicine with our premium products.',
+      headline: 'Nurture Your Baby with Pure Care',
+      subheadline: 'Discover our collection of premium, organic, and safe products for mothers & babies.',
       ctaText: 'Shop Now',
       ctaLink: '#order',
       backgroundImage: '/assets/hero-placeholder.webp',
@@ -56,12 +56,12 @@ export const SECTION_TEMPLATES: SectionTemplate[] = [
     icon: 'shopping-bag',
     defaultContent: {
       productId: '',
-      title: 'Premium Health Booster',
+      title: 'Premium Baby Care Kit',
       price: 1250,
       salePrice: 990,
-      description: 'Our most popular supplement for daily energy and immunity.',
+      description: 'Our most loved grooming and care essentials for your little one\'s comfort and hygiene.',
       image: '/assets/product-placeholder.webp',
-      benefits: ['100% Organic', 'No Side Effects', 'Fast Results'],
+      benefits: ['100% Baby-Safe', 'Hypoallergenic', 'Recommended by Moms'],
     }
   },
   {

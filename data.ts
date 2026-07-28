@@ -1,5 +1,5 @@
 export const productTitles = [
-  "Care Mom Wellness Pro",
+  "Care Mom Baby Pro",
   "Urban Velocity Sneakers",
   "CloudWalk Elite Performance",
   "Stealth Neo-Classic Lows",

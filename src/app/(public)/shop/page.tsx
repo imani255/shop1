@@ -1,4 +1,4 @@
-﻿import { headers } from 'next/headers';
+import { headers } from 'next/headers';
 import { Suspense } from 'react';
 import { getCachedProducts, getCachedCategories, getCachedSettings } from '@/lib/data-fetching';
 import { ShopHeaderSkeleton, ProductCardSkeleton } from '@/components/storefront/Skeletons';
@@ -15,8 +15,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = `${protocol}://${hostname}`;
 
   return {
-    title: `Shop Premium Healthcare & Medicines | ${brandName}`,
-    description: `Buy high-quality prescription medicines, OTC daily healthcare, surgical instruments, diagnostic devices, baby care, and personal wellness essentials online at ${brandName}. Fast home delivery and 100% authentic products.`,
+    title: `Shop Premium Mother & Baby Care Products | ${brandName}`,
+    description: `Buy high-quality organic baby clothing, feeding accessories, safe toys, diapers, skin care, and maternity essentials online at ${brandName}. Fast home delivery and 100% safe, authentic products.`,
     openGraph: {
       title: `Shop | ${brandName}`,
       description: `Explore the wide range of products at ${brandName}.`,

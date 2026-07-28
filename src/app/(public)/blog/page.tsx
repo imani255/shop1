@@ -1,4 +1,4 @@
-﻿import { Metadata } from 'next';
+import { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { getCachedBlogs, getCachedSettings } from '@/lib/data-fetching';
 import { BlogListingSelector } from '@/components/templates/ServerRegistry';
@@ -12,8 +12,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = `${protocol}://${hostname}`;
 
   return {
-    title: `Health, Medicine & Wellness Blog | Expert Medical Guides | ${brandName}`,
-    description: `Read professional health articles, daily wellness advice, baby care guides, disease prevention tips, and expert medical updates from the clinical team at ${brandName}.`,
+    title: `Mother & Baby Care Journal | Expert Parenting Guides | ${brandName}`,
+    description: `Read professional mother & baby care articles, daily parenting advice, baby growth guides, developmental tips, and expert baby care updates from the team at ${brandName}.`,
     openGraph: {
       title: `Blog | ${brandName}`,
       description: `Stay updated with the latest news and guides from ${brandName}.`,

@@ -491,7 +491,7 @@ export default function AdminDashboard() {
                   </div>
                 ))}
                 {(lowStockProducts?.length ?? 0) === 0 && (
-                  <p className="text-center py-4 text-xs text-muted-foreground italic">Inventory levels are healthy!</p>
+                  <p className="text-center py-4 text-xs text-muted-foreground italic">Inventory levels are optimal!</p>
                 )}
               </div>
             </CardContent>
