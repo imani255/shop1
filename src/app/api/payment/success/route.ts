@@ -51,8 +51,13 @@ export async function POST(req: NextRequest) {
           }
         } catch (salesError) {
           console.error('Error updating totalSales on payment success:', salesError);
-          // Note: isSalesCounted is already true, so we won't retry this specific part 
-          // unless we add more complex logic, but consistency is mostly maintained.
+        }
+
+        try {
+          const { logOrderPaymentToLedger } = await import('@/lib/ledgerHelper');
+          await logOrderPaymentToLedger(order);
+        } catch (ledgerErr) {
+          console.error('Error logging payment to ledger on success:', ledgerErr);
         }
       } else {
         // If findOneAndUpdate returns null, it means isSalesCounted was already true 
@@ -63,13 +68,13 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Redirect to success page
+      // Redirect to checkout page with success state (modal will show)
       const origin = req.nextUrl.origin;
-      return NextResponse.redirect(`${origin}/checkout/success?id=${orderId}`, 303);
+      return NextResponse.redirect(`${origin}/checkout?order=success&id=${orderId}`, 303);
     } else {
       console.error('SSLCommerz Validation Failed:', response);
       const origin = req.nextUrl.origin;
-      return NextResponse.redirect(`${origin}/checkout/fail?id=${orderId}&reason=ValidationFailed`, 303);
+      return NextResponse.redirect(`${origin}/checkout?order=failed&id=${orderId}`, 303);
     }
   } catch (error) {
     console.error('Payment Success Error:', error);

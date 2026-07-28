@@ -38,17 +38,30 @@ interface ProductCardProps {
     variants?: any[];
     ratings?: number;
     numReviews?: number;
+    sku?: string;
   };
   isFlashSale?: boolean;
   priority?: boolean;
+  layout?: string;
 }
 
-export default function ProductCardV6({ product, isFlashSale, priority }: ProductCardProps) {
+export default function ProductCardV6({ product: initialProduct, isFlashSale, priority, layout }: ProductCardProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { data: session, status } = useSession();
   const wishlist = useAppSelector((state) => state.wishlist.items);
-  const isInWishlist = wishlist.includes(product._id);
+  const isInWishlist = wishlist.includes(initialProduct._id);
+
+  const firstVariant = initialProduct.variants && initialProduct.variants.length > 0 ? initialProduct.variants[0] : null;
+  const product = firstVariant ? {
+    ...initialProduct,
+    price: firstVariant.price,
+    salePrice: firstVariant.salePrice,
+    stock: firstVariant.stock ?? initialProduct.stock,
+    sku: firstVariant.sku ?? initialProduct.sku,
+    images: firstVariant.image ? [firstVariant.image, ...initialProduct.images.filter((img: string) => img !== firstVariant.image)] : initialProduct.images
+  } : initialProduct;
+
   const hasVariants = product.variants && product.variants.length > 0;
 
   const [showQuickViewModal, setShowQuickViewModal] = useState(false);
@@ -70,7 +83,7 @@ export default function ProductCardV6({ product, isFlashSale, priority }: Produc
       // Track AddToCart
       const addToCartPayload = {
         content_name: product.name,
-        content_category: product.categories?.[0]?.name || 'Uncategorized',
+        content_category: 'Beauty',
         content_ids: [product._id],
         content_type: 'product',
         value: product.salePrice || product.price,
@@ -111,7 +124,7 @@ export default function ProductCardV6({ product, isFlashSale, priority }: Produc
     // Track InitiateCheckout
     const initiateCheckoutPayload = {
       content_name: product.name,
-      content_category: product.categories?.[0]?.name || 'Uncategorized',
+      content_category: 'Beauty',
       content_ids: [product._id],
       content_type: 'product',
       value: product.salePrice || product.price,
@@ -136,7 +149,7 @@ export default function ProductCardV6({ product, isFlashSale, priority }: Produc
       return;
     }
     dispatch(toggleWishlist(product._id));
-    
+
     if (!isInWishlist) {
       // Track AddToWishlist
       const addToWishlistPayload = {
@@ -162,10 +175,10 @@ export default function ProductCardV6({ product, isFlashSale, priority }: Produc
   const discount = product.salePrice ? Math.round(((product.price - product.salePrice) / product.price) * 100) : 0;
 
   return (
-    <div className="group relative flex flex-col font-jost animate-in fade-in duration-700">
+    <div className={`group relative flex flex-col font-jost animate-in fade-in duration-700 ${layout === 'v3' ? 'lg:rounded-sm lg:overflow-hidden lg:border lg:border-border/40 lg:pb-3 lg:bg-card' : ''}`}>
       {/* Image Container */}
-      <div className="relative aspect-square overflow-hidden bg-muted rounded-none">
-        <Link href={`/product/${product.slug}`} className="block h-full w-full">
+      <div className={`relative aspect-square overflow-hidden bg-muted ${layout === 'v3' ? 'lg:rounded-t-sm' : 'rounded-none'}`}>
+        <Link href={`/product/${product.slug}`} className="relative block h-full w-full">
           <Image
             src={product.images?.[0] || '/placeholder.png'}
             alt={product.name}
@@ -179,18 +192,17 @@ export default function ProductCardV6({ product, isFlashSale, priority }: Produc
         {/* Unified Ribbon Badge (Top Left) */}
         {(isFlashSale || discount > 0 || product.isNewArrival || product.isTrending || product.isFeatured) && (
           <div className="absolute top-0 left-0 overflow-hidden w-24 h-24 z-10 pointer-events-none">
-            <div className={`absolute top-0 left-0 text-[10px] font-black py-1 w-32 text-center -rotate-45 -translate-x-10 translate-y-4 shadow-lg uppercase tracking-widest ${
-              isFlashSale ? 'bg-orange-600 text-white animate-pulse' :
+            <div className={`absolute top-0 left-0 text-[10px] font-black py-1 w-32 text-center -rotate-45 -translate-x-10 translate-y-4 shadow-lg uppercase tracking-widest ${isFlashSale ? 'bg-orange-600 text-white animate-pulse' :
               discount > 0 ? 'bg-primary text-black dark:text-neutral-900' :
-              product.isNewArrival ? 'bg-emerald-700 text-white' :
-              product.isTrending ? 'bg-rose-600 text-white animate-pulse' :
-              'bg-amber-400 text-neutral-950'
-            }`}>
+                product.isNewArrival ? 'bg-emerald-700 text-white' :
+                  product.isTrending ? 'bg-rose-600 text-white animate-pulse' :
+                    'bg-amber-400 text-neutral-950'
+              }`}>
               {isFlashSale ? 'Flash' :
-               discount > 0 ? `${discount}% OFF` :
-               product.isNewArrival ? 'New' :
-               product.isTrending ? 'Trending' :
-               'Featured'}
+                discount > 0 ? `${discount}% OFF` :
+                  product.isNewArrival ? 'New' :
+                    product.isTrending ? 'Trending' :
+                      'Featured'}
             </div>
           </div>
         )}
@@ -238,38 +250,38 @@ export default function ProductCardV6({ product, isFlashSale, priority }: Produc
       {/* Product Info */}
       <div className="mt-4 text-center space-y-4 px-2 pb-2 flex-1 flex flex-col justify-between">
         <div className="min-h-[5.25rem] sm:min-h-[4.5rem] flex flex-col justify-center">
-            <Link 
+          <Link
             href={`/product/${product.slug}`}
-            className="text-sm sm:text-base font-semibold text-foreground hover:text-primary transition-colors leading-tight px-2 line-clamp-3 sm:line-clamp-2"
+            className={`text-sm ${layout === 'v3' ? 'lg:text-xs' : 'sm:text-base'} font-semibold text-foreground hover:text-primary transition-colors leading-tight px-2 line-clamp-3 sm:line-clamp-2`}
             title={product.name}
-            >
+          >
             {product.name}
-            </Link>
-            <div className="flex items-center justify-center gap-2 mt-2">
+          </Link>
+          <div className="flex items-center justify-center gap-2 mt-2">
             {product.salePrice ? (
-                <>
-                <span className="text-foreground font-black text-sm sm:text-[16px]">৳{Math.round(product.salePrice)}</span>
-                <span className="text-muted-foreground line-through text-[11px] sm:text-[13px] font-normal">৳{Math.round(product.price)}</span>
-                </>
+              <>
+                <span className={`text-foreground font-black text-sm ${layout === 'v3' ? 'lg:text-[14px]' : 'sm:text-[16px]'}`}>৳{Math.round(product.salePrice)}</span>
+                <span className={`text-muted-foreground line-through text-[11px] ${layout === 'v3' ? 'lg:text-[11px]' : 'sm:text-[13px]'} font-normal`}>৳{Math.round(product.price)}</span>
+              </>
             ) : (
-                <span className="text-foreground font-black text-sm sm:text-[16px]">৳{Math.round(product.price)}</span>
+              <span className={`text-foreground font-black text-sm ${layout === 'v3' ? 'lg:text-[14px]' : 'sm:text-[16px]'}`}>৳{Math.round(product.price)}</span>
             )}
-            </div>
+          </div>
         </div>
 
         {/* Action Buttons - Visible on hover for Desktop, Always for Mobile */}
         <div className="flex flex-col sm:flex-row gap-2 pt-2 transition-all duration-300 sm:opacity-0 sm:translate-y-2 sm:group-hover:opacity-100 sm:group-hover:translate-y-0">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex-1 rounded-full border-primary text-primary hover:bg-primary hover:text-primary-foreground font-bold text-[10px] sm:text-xs h-11 sm:h-10 transition-all active:scale-95 py-2"
+          <Button
+            variant="outline"
+            size="sm"
+            className={`flex-1 rounded-full border-primary text-primary hover:bg-primary hover:text-primary-foreground font-bold text-[10px] ${layout === 'v3' ? 'lg:text-[10px] lg:h-9' : 'sm:text-xs sm:h-10'} h-11 transition-all active:scale-95 py-2`}
             onClick={handleAddToCart}
           >
             <ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" /> Cart
           </Button>
-          <Button 
-            size="sm" 
-            className="flex-1 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-[10px] sm:text-xs h-11 sm:h-10 shadow-lg shadow-primary/20 transition-all active:scale-95 py-2"
+          <Button
+            size="sm"
+            className={`flex-1 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-[10px] ${layout === 'v3' ? 'lg:text-[10px] lg:h-9' : 'sm:text-xs sm:h-10'} h-11 shadow-lg shadow-primary/20 transition-all active:scale-95 py-2`}
             onClick={handleBuyNow}
           >
             Buy Now
@@ -278,7 +290,7 @@ export default function ProductCardV6({ product, isFlashSale, priority }: Produc
       </div>
 
       <QuickViewModal
-        product={product}
+        product={initialProduct}
         isOpen={showQuickViewModal}
         onClose={() => setShowQuickViewModal(false)}
       />

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -79,6 +80,9 @@ const marketingSettingsSchema = z.object({
     redx: z.object({
       apiKey: z.string().nullish().transform(val => val ?? ''),
     }).nullable().optional(),
+    bdCourier: z.object({
+      apiKey: z.string().nullish().transform(val => val ?? ''),
+    }).nullable().optional(),
   }).optional(),
   facebookDomainVerification: z.string().nullish().transform(val => val ?? ''),
   metaPixelId: z.string().nullish().transform(val => val ?? ''),
@@ -124,6 +128,7 @@ export default function MarketingSettingsPage() {
         steadfast: { apiKey: '', secretKey: '' },
         pathao: { clientId: '', clientSecret: '', storeId: '' },
         redx: { apiKey: '' },
+        bdCourier: { apiKey: '' },
       },
       facebookDomainVerification: '',
       metaPixelId: '',
@@ -197,6 +202,9 @@ export default function MarketingSettingsPage() {
                   },
                   redx: {
                     apiKey: result.data.courierConfig?.redx?.apiKey || '',
+                  },
+                  bdCourier: {
+                    apiKey: result.data.courierConfig?.bdCourier?.apiKey || '',
                   },
                 },
                 facebookDomainVerification: result.data.facebookDomainVerification || '',
@@ -441,7 +449,7 @@ export default function MarketingSettingsPage() {
                       <div key={method} className="space-y-4 p-4 rounded-2xl border bg-muted/10">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <img src={`/assets/${method}logo.webp`} alt={method} className="h-6 w-6 object-contain" />
+                            <Image src={`/assets/${method}logo.webp`} alt={method} width={24} height={24} className="h-6 w-6 object-contain" />
                             <span className="font-bold capitalize">{method}</span>
                           </div>
                           <FormField
@@ -603,6 +611,19 @@ export default function MarketingSettingsPage() {
                           <FormLabel className="font-bold text-xs">RedX API Key</FormLabel>
                           <FormControl>
                             <Input type="text" placeholder="RedX API Key" {...field} className="h-10 rounded-lg border px-3 text-xs" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="courierConfig.bdCourier.apiKey"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel className="font-bold text-xs">BD Courier Fraud Check API Key</FormLabel>
+                          <FormControl>
+                            <Input type="text" placeholder="BD Courier API Key" {...field} className="h-10 rounded-lg border px-3 text-xs" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

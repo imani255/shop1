@@ -26,7 +26,7 @@ function validateIds(ids: any) {
 export async function PATCH(req: NextRequest) {
   try {
     const session = await auth();
-    if (!session || !(['admin', 'super_admin'].includes((session?.user as any)?.role))) {
+    if (!session || !(['admin', 'super_admin', 'manager'].includes((session?.user as any)?.role))) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -68,6 +68,11 @@ export async function PATCH(req: NextRequest) {
 
     let modifiedCount = 0;
     try {
+      let ordersToLog: any[] = [];
+      if (paymentStatus === 'Paid') {
+        ordersToLog = await Order.find({ _id: { $in: ids }, paymentStatus: { $ne: 'Paid' } }).session(dbSession);
+      }
+
       const Product = (await import('@/models/Product')).default;
       const becomesValid = ['Confirmed', 'Paid', 'Delivered'].includes(status || '');
 
@@ -116,6 +121,18 @@ export async function PATCH(req: NextRequest) {
       }
 
       await dbSession.commitTransaction();
+
+      if (ordersToLog.length > 0) {
+        try {
+          const { logOrderPaymentToLedger } = await import('@/lib/ledgerHelper');
+          for (const order of ordersToLog) {
+            await logOrderPaymentToLedger(order);
+          }
+        } catch (ledgerErr) {
+          console.error('[Ledger] Error logging payments in bulk update:', ledgerErr);
+        }
+      }
+
       return NextResponse.json({ 
         message: `${modifiedCount} orders updated successfully`,
         count: modifiedCount 
@@ -135,7 +152,7 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
     try {
       const session = await auth();
-      if (!session || !(['admin', 'super_admin'].includes((session?.user as any)?.role))) {
+      if (!session || !(['admin', 'super_admin', 'manager'].includes((session?.user as any)?.role))) {
         return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
       }
   

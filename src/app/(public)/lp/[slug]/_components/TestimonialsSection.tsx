@@ -1,6 +1,7 @@
 'use client';
 
 import { Star } from 'lucide-react';
+import Image from 'next/image';
  
 export default function TestimonialsSection({ content }: { content: any }) {
   return (
@@ -29,9 +30,11 @@ export default function TestimonialsSection({ content }: { content: any }) {
 
             <div className="flex items-center gap-3 mt-6">
               {r.avatar ? (
-                <img 
+                <Image 
                   src={r.avatar} 
                   alt={r.name} 
+                  width={48}
+                  height={48}
                   className="h-12 w-12 rounded-full object-cover border-2 border-primary/10" 
                 />
               ) : (

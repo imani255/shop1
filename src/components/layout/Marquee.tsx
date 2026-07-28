@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import FastMarquee from 'react-fast-marquee';
@@ -15,7 +15,7 @@ export function Marquee({ marqueeText: initialText }: { marqueeText?: string }) 
       try {
         const res = await fetch('/api/settings', { signal: controller.signal });
         if (!res.ok) throw new Error('Failed to fetch settings');
-        
+
         const data = await res.json();
         setMarqueeText(data.marqueeText || 'Welcome to Care Mom! Free shipping on orders over ৳500.');
       } catch (error: any) {
@@ -34,8 +34,8 @@ export function Marquee({ marqueeText: initialText }: { marqueeText?: string }) 
 
   return (
     <div className="bg-primary text-black dark:text-neutral-950 py-2 overflow-hidden flex items-center font-semibold">
-      <FastMarquee 
-        gradient={false} 
+      <FastMarquee
+        gradient={false}
         speed={50}
         pauseOnHover={true}
       >

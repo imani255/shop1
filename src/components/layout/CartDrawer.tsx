@@ -16,6 +16,7 @@ import { removeFromCart, addToCart, clearCart } from '@/store/slices/cartSlice';
 import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import Image from 'next/image';
 
 export function CartDrawer({ children }: { children: React.ReactElement }) {
   const dispatch = useAppDispatch();
@@ -64,7 +65,7 @@ export function CartDrawer({ children }: { children: React.ReactElement }) {
               <div key={`${item.productId}-${item.color || ''}-${item.size || ''}-${index}`} className="flex gap-4 group">
                 <div className="h-20 w-20 rounded-md overflow-hidden bg-muted group-hover:scale-105 transition-transform">
                   {item.image ? (
-                    <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                    <Image src={item.image} alt={item.name} width={80} height={80} className="h-full w-full object-cover" />
                   ) : (
                     <div className="h-full w-full flex items-center justify-center">
                         <ShoppingCart className="h-6 w-6 text-muted-foreground" />

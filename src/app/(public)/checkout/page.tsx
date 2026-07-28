@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -21,9 +22,9 @@ import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, CreditCard, Truck, ShoppingBag, CheckCircle2, Plus, Minus, X, Globe } from 'lucide-react';
+import { Loader2, CreditCard, Truck, ShoppingBag, CheckCircle2, Plus, Minus, X, Globe, ArrowRight, PartyPopper, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Select,
   SelectContent,
@@ -33,6 +34,8 @@ import {
 } from '@/components/ui/select';
 import { fbEvent } from '@/lib/fpixel';
 import { ttEvent } from '@/lib/tiktok';
+
+
 
 import {
   Dialog,
@@ -44,20 +47,20 @@ import {
 } from "@/components/ui/dialog";
 
 const checkoutSchema = z.object({
-  fullName: z.string().min(2, 'আপনার নাম লিখুন'),
-  phone: z.string().min(11, 'সঠিক মোবাইল নম্বর লিখুন'),
-  street: z.string().min(5, 'আপনার সম্পূর্ণ ঠিকানা লিখুন'),
-  shippingRegion: z.enum(['Inside Dhaka', 'Outside Dhaka'], {
-    message: 'ডেলিভারি এলাকা সিলেক্ট করুন',
+  fullName: z.string().min(2, 'নাম আবশ্যক'),
+  phone: z.string().min(11, 'সঠিক মোবাইল নম্বর দিন'),
+  street: z.string().min(5, 'ঠিকানা আবশ্যক'),
+  deliveryArea: z.enum(['inside', 'outside'], {
+    message: 'ডেলিভারি এলাকা নির্বাচন করুন',
   }),
   paymentMethod: z.enum(['COD', 'Online', 'Manual'], {
-    message: 'পেমেন্ট মেথড সিলেক্ট করুন'
+    message: 'Select a payment method'
   }),
 });
 
 type CheckoutValues = z.infer<typeof checkoutSchema>;
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { items, totalAmount, isHydrated } = useAppSelector((state) => state.cart);
@@ -70,6 +73,10 @@ export default function CheckoutPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showFailModal, setShowFailModal] = useState(false);
+  const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
+  const searchParams = useSearchParams();
   const [selectedMethod, setSelectedMethod] = useState<any>(null);
   const [manualDetails, setManualDetails] = useState({
     senderNumber: '',
@@ -78,11 +85,12 @@ export default function CheckoutPage() {
   const [paymentDetailTab, setPaymentDetailTab] = useState<'phone' | 'trx'>('phone');
   const form = useForm<CheckoutValues>({
     resolver: zodResolver(checkoutSchema),
+    mode: 'onChange',
     defaultValues: {
       fullName: '',
       phone: '',
       street: '',
-      shippingRegion: 'Inside Dhaka',
+      deliveryArea: 'inside',
       paymentMethod: 'COD',
     },
   });
@@ -96,6 +104,21 @@ export default function CheckoutPage() {
     }
   }, [form.watch('paymentMethod')]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Handle SSLCommerz redirect back — show modal based on ?order= param
+  useEffect(() => {
+    const orderStatus = searchParams.get('order');
+    const orderId = searchParams.get('id');
+    if (orderStatus === 'success') {
+      setSuccessOrderId(orderId);
+      setShowSuccessModal(true);
+      // Clean URL without reload
+      window.history.replaceState({}, '', '/checkout');
+    } else if (orderStatus === 'failed') {
+      setShowFailModal(true);
+      window.history.replaceState({}, '', '/checkout');
+    }
+  }, [searchParams]);
+
 
 
   useEffect(() => {
@@ -107,7 +130,7 @@ export default function CheckoutPage() {
           fetch('/api/user/profile'),
           fetch('/api/settings')
         ]);
-        
+
         if (profileRes.ok) {
           const profileData = await profileRes.json();
           setProfile(profileData);
@@ -116,7 +139,7 @@ export default function CheckoutPage() {
               fullName: profileData.name || '',
               phone: profileData.phone || '',
               street: profileData.address || '',
-              shippingRegion: profileData.division === 'Dhaka' ? 'Inside Dhaka' : 'Outside Dhaka',
+              deliveryArea: (profileData.division?.toLowerCase().includes('dhaka') || profileData.district?.toLowerCase().includes('dhaka')) ? 'inside' : 'outside',
               paymentMethod: 'COD',
             });
           }
@@ -133,11 +156,11 @@ export default function CheckoutPage() {
             if (groupedForSync[key]) {
               groupedForSync[key].quantity += item.quantity;
             } else {
-              groupedForSync[key] = { 
-                productId: item.productId, 
-                color: item.color, 
-                size: item.size, 
-                quantity: item.quantity 
+              groupedForSync[key] = {
+                productId: item.productId,
+                color: item.color,
+                size: item.size,
+                quantity: item.quantity
               };
             }
           });
@@ -147,10 +170,10 @@ export default function CheckoutPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ items: Object.values(groupedForSync) })
           });
-          
+
           if (syncRes.ok) {
             const { validItems, removedCount, hasInsufficientStock } = await syncRes.json();
-            
+
             // If items were removed (product/variant no longer exists)
             if (removedCount > 0) {
               dispatch(syncItems(validItems));
@@ -159,12 +182,12 @@ export default function CheckoutPage() {
 
             // If stock is insufficient, we'll store this state locally to show warnings
             setSyncData({ validItems, hasInsufficientStock });
-            
+
             if (hasInsufficientStock) {
               toast.error('Some items in your cart have insufficient stock. Please adjust quantities.');
             }
           } else {
-             console.error('Cart sync failed:', await syncRes.text());
+            console.error('Cart sync failed:', await syncRes.text());
           }
         }
       } catch (error) {
@@ -177,7 +200,7 @@ export default function CheckoutPage() {
   // Re-sync cart stock when items change (including quantity)
   useEffect(() => {
     if (!isHydrated || items.length === 0) return;
-    
+
     const syncCartStock = async () => {
       try {
         const groupedForSync: Record<string, any> = {};
@@ -186,11 +209,11 @@ export default function CheckoutPage() {
           if (groupedForSync[key]) {
             groupedForSync[key].quantity += item.quantity;
           } else {
-            groupedForSync[key] = { 
-              productId: item.productId, 
-              color: item.color, 
-              size: item.size, 
-              quantity: item.quantity 
+            groupedForSync[key] = {
+              productId: item.productId,
+              color: item.color,
+              size: item.size,
+              quantity: item.quantity
             };
           }
         });
@@ -200,7 +223,7 @@ export default function CheckoutPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ items: Object.values(groupedForSync) })
         });
-        
+
         if (syncRes.ok) {
           const data = await syncRes.json();
           setSyncData({ validItems: data.validItems, hasInsufficientStock: data.hasInsufficientStock });
@@ -215,78 +238,166 @@ export default function CheckoutPage() {
   }, [items, isHydrated]);
 
   const [syncData, setSyncData] = useState<any>(null);
+  const [isPendingOrderBlocked, setIsPendingOrderBlocked] = useState(false);
 
   const hasTrackedInitiate = useRef(false);
   // Track InitiateCheckout
   useEffect(() => {
-    if (isHydrated && items.length > 0 && !hasTrackedInitiate.current) {
-      const validItems = items.filter(i => i.productId);
-      if (validItems.length === 0) return;
+    if (!isHydrated || items.length === 0 || hasTrackedInitiate.current) return;
 
-      const checkoutPayload = {
-        content_ids: validItems.map(i => i.productId),
-        content_type: 'product',
-        value: totalAmount,
-        currency: 'BDT',
-        num_items: validItems.length,
-        contents: validItems.map(i => ({
-          id: i.productId,
-          quantity: i.quantity,
-          item_price: i.price
-        }))
-      };
+    const validItems = items.filter(i => i.productId);
+    if (validItems.length === 0) return;
 
-      fbEvent('InitiateCheckout', checkoutPayload);
-      ttEvent('InitiateCheckout', checkoutPayload);
-      hasTrackedInitiate.current = true;
-    }
-  }, [isHydrated, items, totalAmount]); 
+    hasTrackedInitiate.current = true;
+
+    const checkoutPayload = {
+      content_ids: validItems.map(i => i.productId),
+      content_type: 'product',
+      value: totalAmount,
+      currency: 'BDT',
+      num_items: validItems.length,
+      contents: validItems.map(i => ({
+        id: i.productId,
+        quantity: i.quantity,
+        item_price: i.price
+      }))
+    };
+
+    const initiateUserData = { em: profile?.email, country: 'bd' };
+
+    // Wait for fbq to initialize before firing browser pixel
+    // CAPI still fires immediately regardless
+    const waitForFbq = (maxWaitMs = 5000, intervalMs = 200) =>
+      new Promise<void>((resolve) => {
+        if (typeof window !== 'undefined' && window.fbq) { resolve(); return; }
+        let elapsed = 0;
+        const timer = setInterval(() => {
+          elapsed += intervalMs;
+          if ((typeof window !== 'undefined' && window.fbq) || elapsed >= maxWaitMs) {
+            clearInterval(timer);
+            resolve();
+          }
+        }, intervalMs);
+      });
+
+    waitForFbq().then(() => {
+      fbEvent('InitiateCheckout', checkoutPayload, initiateUserData);
+      ttEvent('InitiateCheckout', checkoutPayload, initiateUserData);
+    });
+  }, [isHydrated, items, totalAmount, profile?.email]);
+
+  // Check for pending order proactively when phone number is typed or on load
+  const watchedPhoneVal = form.watch('phone');
+  useEffect(() => {
+    const checkPendingOrder = async () => {
+      const query = new URLSearchParams();
+      if (watchedPhoneVal && watchedPhoneVal.trim().length >= 11) {
+        query.append('phone', watchedPhoneVal.trim());
+      }
+      try {
+        const res = await fetch(`/api/orders/check-pending?${query.toString()}`);
+        if (res.ok) {
+          const { hasPending } = await res.json();
+          if (hasPending) {
+            setIsPendingOrderBlocked(true);
+            toast.error("You already have a pending order. Please wait for it to be confirmed before placing another order.");
+          } else {
+            setIsPendingOrderBlocked(false);
+          }
+        }
+      } catch (err) {
+        console.error("Error checking pending order:", err);
+      }
+    };
+
+    checkPendingOrder();
+  }, [watchedPhoneVal]);
+
+  // Debounced sync of checkout info for abandoned carts tracking
+  const watchedFullName = form.watch('fullName');
+  const watchedPhone = form.watch('phone');
+  const watchedStreet = form.watch('street');
+  const watchedDeliveryArea = form.watch('deliveryArea');
+
+  useEffect(() => {
+    if (!isHydrated || items.length === 0 || submissionSucceededRef.current) return;
+    if (!watchedPhone || watchedPhone.trim().length < 11 || !watchedFullName || watchedFullName.trim().length < 2) return;
+
+    const syncAbandonedCart = async () => {
+      try {
+        await fetch('/api/cart/abandoned', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fullName: watchedFullName,
+            phone: watchedPhone,
+            email: profile?.email || '',
+            street: watchedStreet,
+            deliveryArea: watchedDeliveryArea,
+            items: items.map(item => ({
+              product: item.productId,
+              name: item.name,
+              quantity: item.quantity,
+              price: item.price,
+              image: item.image,
+              color: item.color,
+              size: item.size
+            })),
+            totalAmount
+          })
+        });
+      } catch (error) {
+        console.error('Failed to sync abandoned cart:', error);
+      }
+    };
+
+    const timer = setTimeout(syncAbandonedCart, 2000); // 2 seconds debounce
+    return () => clearTimeout(timer);
+  }, [watchedFullName, watchedPhone, watchedStreet, watchedDeliveryArea, items, totalAmount, isHydrated, profile?.email]);
 
   const submissionSucceededRef = useRef(false);
-
-  const [canRedirect, setCanRedirect] = useState(false);
-
-  // Delay the redirect permission to allow Redux state to fully settle
-  useEffect(() => {
-    if (isHydrated) {
-      const timer = setTimeout(() => setCanRedirect(true), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [isHydrated]);
-
-  useEffect(() => {
-    // Only redirect if hydration is complete, the grace period (canRedirect) has passed, 
-    // and the cart is still truly empty.
-    if (canRedirect && isHydrated && items.length === 0 && !loading && !submissionSucceededRef.current) {
-      router.push('/shop');
-    }
-  }, [canRedirect, isHydrated, items.length, router, loading]);
 
   const onSubmit = async (values: CheckoutValues) => {
     setLoading(true);
     try {
+      // Normalize Bangla digits to English digits and sanitize phone
+      const banglaDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+      const englishDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+      let normalizedPhone = values.phone || '';
+      for (let i = 0; i < 10; i++) {
+        normalizedPhone = normalizedPhone.replace(new RegExp(banglaDigits[i], 'g'), englishDigits[i]);
+      }
+      let cleanedPhone = normalizedPhone.replace(/[^0-9]/g, '');
+
+      // Remove country prefixes (88, +88, 0088) if present
+      if (cleanedPhone.startsWith('88')) {
+        cleanedPhone = cleanedPhone.substring(2);
+      } else if (cleanedPhone.startsWith('0088')) {
+        cleanedPhone = cleanedPhone.substring(4);
+      }
+
       const orderData = {
         items: items.map(item => ({
-            product: item.productId,
-            name: item.name,
-            quantity: item.quantity,
-            price: item.price,
-            image: item.image,
-            color: item.color,
-            size: item.size
+          product: item.productId,
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          image: item.image,
+          color: item.color,
+          size: item.size
         })),
         shippingAddress: {
-            fullName: values.fullName,
-            phone: values.phone,
-            email: profile?.email || `${values.phone}@store.com`, // Email is hidden now, use fallback
-            street: values.street,
-            city: values.shippingRegion === 'Inside Dhaka' ? 'Dhaka' : 'Outside Dhaka',
-            state: values.shippingRegion === 'Inside Dhaka' ? 'Dhaka' : 'Outside Dhaka',
-            division: values.shippingRegion === 'Inside Dhaka' ? 'Dhaka' : 'Outside Dhaka',
-            district: values.shippingRegion === 'Inside Dhaka' ? 'Dhaka' : 'Outside Dhaka',
-            thana: values.shippingRegion === 'Inside Dhaka' ? 'Dhaka' : 'Outside Dhaka',
-            zipCode: '0000',
-            country: 'Bangladesh'
+          fullName: values.fullName,
+          phone: cleanedPhone || values.phone,
+          email: profile?.email || `${cleanedPhone || Date.now()}@store.com`,
+          street: values.street,
+          city: values.deliveryArea === 'inside' ? 'Dhaka' : 'Outside Dhaka',
+          state: values.deliveryArea === 'inside' ? 'Dhaka' : 'Outside Dhaka',
+          division: values.deliveryArea === 'inside' ? 'Dhaka' : 'Outside Dhaka',
+          district: values.deliveryArea === 'inside' ? 'Dhaka' : 'Outside Dhaka',
+          thana: values.deliveryArea === 'inside' ? 'Dhaka' : 'Outside Dhaka',
+          zipCode: '0000',
+          country: 'Bangladesh'
         },
         paymentMethod: values.paymentMethod,
         deliveryCharge: deliveryCharge,
@@ -308,7 +419,45 @@ export default function CheckoutPage() {
       if (response.ok) {
         const order = await response.json();
         submissionSucceededRef.current = true;
-        
+
+        // Track Purchase event immediately on API success
+        try {
+          const safeItems = Array.isArray(order.items) ? order.items : items;
+          const fullName = values.fullName || '';
+          const nameParts = fullName.trim().split(/\s+/);
+
+          const purchaseEventData = {
+            value: order.totalAmount ?? totalAmount,
+            currency: 'BDT',
+            content_ids: safeItems.map((i: any) => i.product?._id || i.product || i.productId),
+            content_type: 'product',
+            num_items: safeItems.length,
+            contents: safeItems.map((i: any) => ({
+              id: i.product?._id || i.product || i.productId,
+              quantity: i.quantity,
+              item_price: i.price,
+            })),
+          };
+
+          const purchaseUserData: any = {
+            em: profile?.email || '',
+            ph: values.phone,
+            fn: nameParts[0] || '',
+            ln: nameParts.slice(1).join(' ') || '',
+            country: 'bd',
+          };
+
+          if (values.deliveryArea === 'inside') {
+            purchaseUserData.ct = 'Dhaka';
+            purchaseUserData.st = 'Dhaka';
+          }
+
+          fbEvent('Purchase', purchaseEventData, purchaseUserData, order._id);
+          ttEvent('Purchase', purchaseEventData, purchaseUserData, order._id);
+        } catch (trackingError) {
+          console.error('Tracking error:', trackingError);
+        }
+
         if (values.paymentMethod === 'Online') {
           // Initialize SSLCommerz Payment
           const initRes = await fetch('/api/payment/init', {
@@ -329,13 +478,14 @@ export default function CheckoutPage() {
             toast.error(initError.message || 'Failed to initialize payment gateway. Please try paying from your dashboard.');
             // Still clear cart if the order was created successfully
             dispatch(clearCart());
-            router.push(`/checkout/success?id=${order._id}`);
+            setSuccessOrderId(order._id);
+            setShowSuccessModal(true);
           }
         } else {
-          // COD Success - Clear cart and redirect
+          // COD / Manual Success — clear cart and show success modal
           dispatch(clearCart());
-          toast.success('Order placed successfully!');
-          router.push(`/checkout/success?id=${order._id}`);
+          setSuccessOrderId(order._id);
+          setShowSuccessModal(true);
         }
       } else {
         const error = await response.json();
@@ -351,7 +501,7 @@ export default function CheckoutPage() {
   const applyCoupon = async (codeToUse?: string) => {
     const code = codeToUse || couponCode;
     if (!code.trim()) return;
-    
+
     setApplyingCoupon(true);
     try {
       const res = await fetch('/api/coupons/validate', {
@@ -395,37 +545,42 @@ export default function CheckoutPage() {
   };
 
 
-  
+
   const freeDeliveryThreshold = settings?.freeDeliveryThreshold || 0;
   const isFreeDelivery = freeDeliveryThreshold > 0 && totalAmount >= freeDeliveryThreshold;
-  
-  const chargeInsideDhaka = settings?.deliveryChargeInsideDhaka || 60;
-  const chargeOutsideDhaka = settings?.deliveryChargeOutsideDhaka || 120;
-  
+
+  const chargeInsideDhaka = settings?.deliveryChargeInsideDhaka ?? 60;
+  const chargeOutsideDhaka = settings?.deliveryChargeOutsideDhaka ?? 120;
+
   const totalProductDiscount = items.reduce((sum, item) => {
     const itemBasePrice = item.basePrice || item.price;
     return sum + Math.max(0, itemBasePrice - item.price) * item.quantity;
   }, 0);
 
+  const deliveryArea = form.watch('deliveryArea');
+  const isDhaka = deliveryArea === 'inside';
   const deliveryCharge = items.length > 0 ? (
-    isFreeDelivery ? 0 : (form.watch('shippingRegion') === 'Inside Dhaka' ? chargeInsideDhaka : chargeOutsideDhaka)
+    isFreeDelivery ? 0 : (isDhaka ? chargeInsideDhaka : chargeOutsideDhaka)
   ) : 0;
 
   const totalAfterCoupon = Math.max(0, totalAmount + deliveryCharge - couponDiscount);
 
-  const walletAmountToUse = useWallet && profile?.walletBalance 
-    ? Math.min(profile.walletBalance, totalAfterCoupon) 
+  const walletAmountToUse = useWallet && profile?.walletBalance
+    ? Math.min(profile.walletBalance, totalAfterCoupon)
     : 0;
 
   const finalTotal = totalAfterCoupon - walletAmountToUse;
 
   // Validation check for mandatory fields to show/hide the order button
   const watchedFields = form.watch();
+  const isPhoneValid = /^(?:01)[3-9]\d{8}$/.test(watchedFields.phone || '');
+  const isAddressValid = (watchedFields.street || '').trim().length >= 5;
+  const isNameValid = (watchedFields.fullName || '').trim().length >= 2;
   const isFormValid = !!(
-    watchedFields.fullName?.trim() && 
-    watchedFields.phone?.trim() && 
-    watchedFields.street?.trim() && 
-    watchedFields.shippingRegion &&
+    isNameValid &&
+    isPhoneValid &&
+    isAddressValid &&
+    watchedFields.deliveryArea &&
     (watchedFields.paymentMethod !== 'Manual' || (selectedMethod?.id && manualDetails.senderNumber && manualDetails.transactionId))
   );
 
@@ -434,22 +589,41 @@ export default function CheckoutPage() {
     : 0;
 
   const handleUpdateQuantity = (item: any, delta: number) => {
-      if (item.quantity + delta === 0) {
-          dispatch(removeFromCart({ productId: item.productId, color: item.color, size: item.size }));
-          toast.info(`${item.name} removed from cart`);
-      } else {
-          dispatch(addToCart({ ...item, quantity: delta }));
-      }
+    if (item.quantity + delta === 0) {
+      dispatch(removeFromCart({ productId: item.productId, color: item.color, size: item.size }));
+      toast.info(`${item.name} removed from cart`);
+    } else {
+      dispatch(addToCart({ ...item, quantity: delta }));
+    }
   };
 
-  // Show loading state or nothing while hydrating to prevent flash of "empty cart" redirect
+  // Show loading state while hydrating to prevent flash of "empty cart" redirect
   if (!isHydrated) return (
     <div className="container min-h-[60vh] flex items-center justify-center">
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
     </div>
   );
 
-  if (items.length === 0) return null;
+  // Show empty cart UI instead of redirecting
+  if (items.length === 0 && !showSuccessModal && !showFailModal) return (
+    <div className="container min-h-[70vh] flex flex-col items-center justify-center gap-6 py-20 text-center">
+      <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center">
+        <ShoppingBag className="w-12 h-12 text-muted-foreground" />
+      </div>
+      <div className="space-y-2">
+        <h2 className="text-2xl font-black tracking-tight">আপনার কার্ট খালি!</h2>
+        <p className="text-muted-foreground text-sm max-w-xs">
+          চেকআউট করতে আগে কিছু পণ্য কার্টে যোগ করুন।
+        </p>
+      </div>
+      <Button
+        onClick={() => router.push('/shop')}
+        className="rounded-full px-8 h-11 font-bold"
+      >
+        শপে যান <ArrowRight className="ml-2 h-4 w-4" />
+      </Button>
+    </div>
+  );
 
   return (
     <div className="container px-4 md:px-6 py-12">
@@ -458,15 +632,25 @@ export default function CheckoutPage() {
         <div className="hidden lg:block sticky top-24 self-start space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>অর্ডার লিস্ট</CardTitle>
-              <CardDescription>আপনার কার্টে থাকা প্রোডাক্টগুলো।</CardDescription>
+              <CardTitle>Your Items</CardTitle>
+              <CardDescription>Items you are about to purchase.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="max-h-[500px] overflow-y-auto space-y-4 pr-2 -mr-2">
                 {items.map((item, index) => (
                   <div key={`${item.productId}-${item.color || 'no-color'}-${item.size || 'no-size'}-${index}`} className="flex gap-4 items-start relative group">
                     <div className="h-16 w-16 rounded-md border bg-muted flex-shrink-0 relative overflow-hidden">
-                      {item.image && <img src={item.image} alt={item.name || 'Product'} className="h-full w-full object-cover" />}
+                      {item.image && (
+                        <Image 
+                          src={item.image} 
+                          alt={item.name || 'Product'} 
+                          width={64} 
+                          height={64} 
+                          priority={index === 0}
+                          loading={index === 0 ? "eager" : "lazy"}
+                          className="h-full w-full object-cover" 
+                        />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0 space-y-1">
                       <div className="flex justify-between items-start gap-2 w-full min-w-0">
@@ -478,7 +662,7 @@ export default function CheckoutPage() {
                             </p>
                           )}
                         </div>
-                        <button 
+                        <button
                           onClick={() => {
                             dispatch(removeFromCart({ productId: item.productId, color: item.color, size: item.size }));
                             toast.info(`${item.name} removed from cart`);
@@ -489,11 +673,11 @@ export default function CheckoutPage() {
                           <X className="h-3.5 w-3.5" />
                         </button>
                       </div>
-                      
+
                       <div className="flex items-center justify-between">
                         <div className="flex items-center border rounded-full bg-muted/50 scale-90 -ml-2">
-                          <button 
-                            type="button" 
+                          <button
+                            type="button"
                             onClick={() => handleUpdateQuantity(item, -1)}
                             className="h-7 w-7 flex items-center justify-center hover:bg-muted rounded-full transition-colors"
                             aria-label={`Decrease quantity of ${item.name}`}
@@ -501,7 +685,7 @@ export default function CheckoutPage() {
                             <Minus className="h-3 w-3" />
                           </button>
                           <span className="w-6 text-center text-xs font-bold">{item.quantity}</span>
-                          <button 
+                          <button
                             type="button"
                             onClick={() => handleUpdateQuantity(item, 1)}
                             className="h-7 w-7 flex items-center justify-center hover:bg-muted rounded-full transition-colors"
@@ -512,21 +696,21 @@ export default function CheckoutPage() {
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-bold text-primary">৳{Math.round(item.price * item.quantity)}</p>
-                          {syncData?.validItems?.find((v: any) => 
-                            v.productId === item.productId && 
-                            v.color === item.color && 
+                          {syncData?.validItems?.find((v: any) =>
+                            v.productId === item.productId &&
+                            v.color === item.color &&
                             v.size === item.size
                           )?.isInsufficient && (
-                            <p className="text-[9px] text-destructive font-black animate-pulse mt-1">
-                              INSUFFICIENT STOCK (Available: {
-                                syncData.validItems.find((v: any) => 
-                                  v.productId === item.productId && 
-                                  v.color === item.color && 
-                                  v.size === item.size
-                                ).availableStock
-                              })
-                            </p>
-                          )}
+                              <p className="text-[9px] text-destructive font-black animate-pulse mt-1">
+                                INSUFFICIENT STOCK (Available: {
+                                  syncData.validItems.find((v: any) =>
+                                    v.productId === item.productId &&
+                                    v.color === item.color &&
+                                    v.size === item.size
+                                  ).availableStock
+                                })
+                              </p>
+                            )}
                         </div>
                       </div>
                     </div>
@@ -535,7 +719,7 @@ export default function CheckoutPage() {
               </div>
               <Separator />
               <div className="flex justify-between items-center pt-2">
-                <span className="text-base font-bold">আইটেম টোটাল</span>
+                <span className="text-base font-bold">Items Total</span>
                 <span className="text-xl font-black text-primary">৳{Math.round(totalAmount)}</span>
               </div>
             </CardContent>
@@ -545,8 +729,8 @@ export default function CheckoutPage() {
         {/* Right Side: Delivery & Payment */}
         <div className="space-y-8">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">চেকআউট</h1>
-            <p className="text-muted-foreground mt-2">অর্ডারটি সম্পন্ন করতে আপনার তথ্যগুলো পূরণ করুন।</p>
+            <h1 className="text-3xl font-bold tracking-tight">Checkout</h1>
+            <p className="text-muted-foreground mt-2">Complete your order by filling in the details below.</p>
           </div>
 
           <Form {...form}>
@@ -564,9 +748,9 @@ export default function CheckoutPage() {
                     name="fullName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-bold">আপনার নাম</FormLabel>
+                        <FormLabel>পূর্ণ নাম</FormLabel>
                         <FormControl>
-                          <Input placeholder="আপনার পূর্ণ নাম লিখুন" {...field} className="h-12 focus-visible:ring-primary/20" />
+                          <Input placeholder="আপনার পূর্ণ নাম লিখুন" {...field} className="h-11 focus-visible:ring-primary/20" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -577,40 +761,39 @@ export default function CheckoutPage() {
                     name="phone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-bold">মোবাইল নম্বর</FormLabel>
+                        <FormLabel>মোবাইল নম্বর</FormLabel>
                         <FormControl>
-                          <Input placeholder="আপনার সচল মোবাইল নম্বর লিখুন" {...field} className="h-12 focus-visible:ring-primary/20" />
+                          <Input placeholder="যেমন: 017XXXXXXXX" {...field} className="h-11 focus-visible:ring-primary/20" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
                   <FormField
                     control={form.control}
-                    name="shippingRegion"
+                    name="deliveryArea"
                     render={({ field }) => (
                       <FormItem className="space-y-3">
-                        <FormLabel className="text-sm font-bold">ডেলিভারি এলাকা</FormLabel>
+                        <FormLabel className="font-bold">ডেলিভারি এলাকা</FormLabel>
                         <FormControl>
                           <RadioGroup
                             onValueChange={field.onChange}
                             value={field.value}
-                            className="flex gap-4"
+                            className="flex flex-row space-x-6 pt-1"
                           >
-                            <FormItem className="flex items-center space-x-2 space-y-0">
+                            <FormItem className="flex items-center space-x-2 space-y-0 cursor-pointer">
                               <FormControl>
-                                <RadioGroupItem value="Inside Dhaka" />
+                                <RadioGroupItem value="inside" />
                               </FormControl>
-                              <FormLabel className="font-normal cursor-pointer">
+                              <FormLabel className="font-medium cursor-pointer text-sm">
                                 ঢাকার ভিতরে
                               </FormLabel>
                             </FormItem>
-                            <FormItem className="flex items-center space-x-2 space-y-0">
+                            <FormItem className="flex items-center space-x-2 space-y-0 cursor-pointer">
                               <FormControl>
-                                <RadioGroupItem value="Outside Dhaka" />
+                                <RadioGroupItem value="outside" />
                               </FormControl>
-                              <FormLabel className="font-normal cursor-pointer">
+                              <FormLabel className="font-medium cursor-pointer text-sm">
                                 ঢাকার বাইরে
                               </FormLabel>
                             </FormItem>
@@ -620,15 +803,14 @@ export default function CheckoutPage() {
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
                     name="street"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-bold">সম্পূর্ণ ঠিকানা</FormLabel>
+                        <FormLabel>সম্পূর্ণ ঠিকানা</FormLabel>
                         <FormControl>
-                          <Input placeholder="গ্রাম/বাসা নং, রোড নং, এলাকা, থানা, জেলা" {...field} className="h-12 focus-visible:ring-primary/20" />
+                          <Input placeholder="গ্রাম/বাসা নং, রোড নং, এলাকা, থানা, জেলা" {...field} className="h-11 focus-visible:ring-primary/20" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -646,28 +828,28 @@ export default function CheckoutPage() {
                   {/* Coupon Section */}
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
-                      <Input 
-                        placeholder="Coupon Code" 
+                      <Input
+                        placeholder="Coupon Code"
                         value={couponCode}
                         onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                         disabled={!!appliedCoupon || applyingCoupon}
                         className="h-10 text-xs"
                       />
                       {appliedCoupon ? (
-                        <Button 
-                          type="button" 
-                          variant="destructive" 
-                          size="sm" 
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
                           onClick={removeCoupon}
                           className="h-10 px-3"
                         >
                           Remove
                         </Button>
                       ) : (
-                        <Button 
-                          type="button" 
-                          size="sm" 
-                          onClick={() => applyCoupon()} 
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => applyCoupon()}
                           disabled={applyingCoupon || !couponCode}
                           className="h-10 px-4"
                         >
@@ -772,20 +954,20 @@ export default function CheckoutPage() {
                               </FormItem>
                             )}
 
-                            {(settings?.manualPaymentConfig?.bkash?.active || 
-                              settings?.manualPaymentConfig?.nagad?.active || 
+                            {(settings?.manualPaymentConfig?.bkash?.active ||
+                              settings?.manualPaymentConfig?.nagad?.active ||
                               settings?.manualPaymentConfig?.rocket?.active ||
                               settings?.manualPaymentConfig?.banglaQr?.active) && (
-                              <FormItem className="flex items-center space-x-3 space-y-0 border rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition-colors">
-                                <FormControl>
-                                  <RadioGroupItem value="Manual" />
-                                </FormControl>
-                                <FormLabel className="font-bold flex-1 cursor-pointer">
-                                  Manual Payment (MFS / Bangla QR)
-                                  <p className="text-xs font-normal text-muted-foreground mt-1">Send money manually or scan QR to pay.</p>
-                                </FormLabel>
-                              </FormItem>
-                            )}
+                                <FormItem className="flex items-center space-x-3 space-y-0 border rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                                  <FormControl>
+                                    <RadioGroupItem value="Manual" />
+                                  </FormControl>
+                                  <FormLabel className="font-bold flex-1 cursor-pointer">
+                                    Manual Payment (MFS / Bangla QR)
+                                    <p className="text-xs font-normal text-muted-foreground mt-1">Send money manually or scan QR to pay.</p>
+                                  </FormLabel>
+                                </FormItem>
+                              )}
                           </RadioGroup>
                         </FormControl>
                         <FormMessage />
@@ -801,21 +983,20 @@ export default function CheckoutPage() {
                         if (!config?.active) return null;
                         const isSelected = selectedMethod?.id === method;
                         return (
-                          <div 
-                            key={method} 
+                          <div
+                            key={method}
                             onClick={() => {
                               setSelectedMethod({ id: method, ...config });
                               setShowPaymentModal(true);
                             }}
-                            className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center gap-2 hover:bg-muted/50 ${
-                              isSelected ? 'border-primary bg-primary/5' : 'border-muted'
-                            }`}
+                            className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center gap-2 hover:bg-muted/50 ${isSelected ? 'border-primary bg-primary/5' : 'border-muted'
+                              }`}
                           >
                             <div className="h-10 w-10 flex items-center justify-center">
                               {method === 'banglaQr' ? (
                                 <Globe className="h-8 w-8 text-primary" />
                               ) : (
-                                <img src={`/assets/${method}logo.webp`} alt={method} className="h-full w-auto object-contain" />
+                                <Image src={`/assets/${method}logo.webp`} alt={method || "Payment MFS Logo"} width={40} height={40} className="h-full w-auto object-contain" />
                               )}
                             </div>
                             <p className="text-[10px] font-bold uppercase">{method === 'banglaQr' ? 'Bangla QR' : method}</p>
@@ -829,7 +1010,7 @@ export default function CheckoutPage() {
                       })}
                     </div>
                   )}
-                  
+
                   {/* Validation Message for Manual Payment */}
                   {form.watch('paymentMethod') === 'Manual' && !selectedMethod?.id && (
                     <p className="text-[10px] text-destructive font-bold text-center mt-2 animate-pulse">
@@ -841,9 +1022,9 @@ export default function CheckoutPage() {
                     <div className="p-4 border rounded-lg bg-primary/5 border-primary/20">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <input 
-                            type="checkbox" 
-                            id="use-wallet" 
+                          <input
+                            type="checkbox"
+                            id="use-wallet"
                             checked={useWallet}
                             onChange={(e) => setUseWallet(e.target.checked)}
                             className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
@@ -859,21 +1040,20 @@ export default function CheckoutPage() {
                   )}
                 </CardContent>
                 <CardFooter className="pt-2 border-t flex flex-col gap-3">
-                  <Button 
+                  <Button
                     type="submit"
-                    className={`w-full h-14 rounded-full font-black uppercase tracking-widest text-sm transition-all ${
-                      isFormValid && !syncData?.hasInsufficientStock
-                      ? 'bg-primary shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95' 
-                      : 'bg-muted text-muted-foreground cursor-not-allowed opacity-70'
-                    }`}
-                    disabled={loading || !isFormValid || syncData?.hasInsufficientStock}
+                    className={`w-full h-14 rounded-full font-black uppercase tracking-widest text-sm transition-all ${isFormValid && !syncData?.hasInsufficientStock && !isPendingOrderBlocked
+                        ? 'bg-primary shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95'
+                        : 'bg-muted text-muted-foreground cursor-not-allowed opacity-70'
+                      }`}
+                    disabled={loading || !isFormValid || syncData?.hasInsufficientStock || isPendingOrderBlocked}
                   >
                     {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CheckCircle2 className="mr-2 h-5 w-5" />}
-                    {syncData?.hasInsufficientStock ? 'Insufficient Stock' : 'Place Order Now'}
+                    {isPendingOrderBlocked ? 'পেন্ডিং অর্ডার রয়েছে' : syncData?.hasInsufficientStock ? 'পর্যাপ্ত স্টক নেই' : 'অর্ডার নিশ্চিত করুন'}
                   </Button>
                   {!isFormValid && (
                     <p className="text-[10px] font-bold text-muted-foreground text-center w-full uppercase tracking-widest">
-                      Please fill all delivery details to proceed
+                      অর্ডার সম্পন্ন করতে ডেলিভারি তথ্য পূরণ করুন
                     </p>
                   )}
                 </CardFooter>
@@ -892,7 +1072,7 @@ export default function CheckoutPage() {
                 {selectedMethod?.id === 'banglaQr' ? (
                   <Globe className="h-6 w-6 text-primary" />
                 ) : (
-                  <img src={`/assets/${selectedMethod?.id}logo.webp`} alt={selectedMethod?.id} className="h-full w-auto object-contain" />
+                  <Image src={`/assets/${selectedMethod?.id}logo.webp`} alt={selectedMethod?.id || "Payment Method Logo"} width={40} height={40} className="h-full w-auto object-contain" />
                 )}
               </div>
               <div className="text-left">
@@ -917,9 +1097,9 @@ export default function CheckoutPage() {
                     <p className="text-lg font-black tracking-widest text-slate-900 dark:text-zinc-50 bg-white dark:bg-zinc-800 px-3 py-1.5 rounded-lg border border-primary/10 flex-1 text-center select-all">
                       {selectedMethod?.number}
                     </p>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       className="h-9 rounded-lg text-[10px] font-bold border hover:bg-primary hover:text-white transition-all shrink-0"
                       onClick={() => {
                         navigator.clipboard.writeText(selectedMethod?.number);
@@ -931,12 +1111,12 @@ export default function CheckoutPage() {
                   </div>
                 </>
               )}
-              
+
               {(selectedMethod?.qrCode || selectedMethod?.id === 'banglaQr') && (
                 <div className="flex flex-col items-center gap-1.5 pt-2 border-t border-primary/10">
                   <p className="text-[9px] font-bold uppercase opacity-40">Scan QR Code to Pay</p>
                   <div className="p-1.5 bg-white rounded-lg shadow-sm border border-primary/10">
-                    <img src={selectedMethod?.qrCode || '/assets/placeholder-qr.png'} alt="QR" className="h-32 w-32 object-contain" />
+                    <Image src={selectedMethod?.qrCode || '/assets/placeholder-qr.png'} alt="QR" width={128} height={128} className="h-32 w-32 object-contain" />
                   </div>
                 </div>
               )}
@@ -962,22 +1142,20 @@ export default function CheckoutPage() {
               <button
                 type="button"
                 onClick={() => setPaymentDetailTab('phone')}
-                className={`flex-1 pb-1.5 text-[11px] font-bold text-center border-b-2 transition-all ${
-                  paymentDetailTab === 'phone'
+                className={`flex-1 pb-1.5 text-[11px] font-bold text-center border-b-2 transition-all ${paymentDetailTab === 'phone'
                     ? 'border-primary text-primary'
                     : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200'
-                }`}
+                  }`}
               >
                 {selectedMethod?.id === 'bkash' ? 'বিকাশ' : selectedMethod?.id === 'nagad' ? 'নগদ' : selectedMethod?.id === 'rocket' ? 'রকেট' : 'মোবাইল'} নম্বর দিয়ে
               </button>
               <button
                 type="button"
                 onClick={() => setPaymentDetailTab('trx')}
-                className={`flex-1 pb-1.5 text-[11px] font-bold text-center border-b-2 transition-all ${
-                  paymentDetailTab === 'trx'
+                className={`flex-1 pb-1.5 text-[11px] font-bold text-center border-b-2 transition-all ${paymentDetailTab === 'trx'
                     ? 'border-primary text-primary'
                     : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200'
-                }`}
+                  }`}
               >
                 ট্রানজেকশন আইডি (TrxID) দিয়ে
               </button>
@@ -988,20 +1166,20 @@ export default function CheckoutPage() {
               {paymentDetailTab === 'phone' ? (
                 <div className="space-y-1.5">
                   <Label className="text-[10px] font-black uppercase opacity-60">আপনার {selectedMethod?.id === 'bkash' ? 'বিকাশ' : selectedMethod?.id === 'nagad' ? 'নগদ' : selectedMethod?.id === 'rocket' ? 'রকেট' : 'মোবাইল'} নম্বর</Label>
-                  <Input 
-                    placeholder="যে নম্বর থেকে টাকা পাঠিয়েছেন (যেমন: 017XXXXXXXX)" 
+                  <Input
+                    placeholder="যে নম্বর থেকে টাকা পাঠিয়েছেন (যেমন: 017XXXXXXXX)"
                     value={manualDetails.senderNumber}
-                    onChange={(e) => setManualDetails({...manualDetails, senderNumber: e.target.value})}
+                    onChange={(e) => setManualDetails({ ...manualDetails, senderNumber: e.target.value })}
                     className="h-10 rounded-lg text-xs focus:ring-primary/20 bg-background"
                   />
                 </div>
               ) : (
                 <div className="space-y-1.5">
                   <Label className="text-[10px] font-black uppercase opacity-60">ট্রানজেকশন আইডি (TrxID)</Label>
-                  <Input 
-                    placeholder="যেমন: 8N7A6D5C" 
+                  <Input
+                    placeholder="যেমন: 8N7A6D5C"
                     value={manualDetails.transactionId}
-                    onChange={(e) => setManualDetails({...manualDetails, transactionId: e.target.value.toUpperCase()})}
+                    onChange={(e) => setManualDetails({ ...manualDetails, transactionId: e.target.value.toUpperCase() })}
                     className="h-10 rounded-lg text-xs focus:ring-primary/20 bg-background"
                   />
                 </div>
@@ -1010,16 +1188,16 @@ export default function CheckoutPage() {
 
             {settings?.manualPaymentConfig?.instructions && (
               <div className="p-3 bg-muted/30 rounded-lg">
-                  <p className="text-[9px] leading-relaxed text-muted-foreground italic">
-                     <strong>নির্দেশনা:</strong> {settings.manualPaymentConfig.instructions}
-                  </p>
+                <p className="text-[9px] leading-relaxed text-muted-foreground italic">
+                  <strong>নির্দেশনা:</strong> {settings.manualPaymentConfig.instructions}
+                </p>
               </div>
             )}
           </div>
 
           <DialogFooter className="p-4 bg-muted/20 border-t flex flex-row gap-3 shrink-0">
             <Button variant="outline" onClick={() => setShowPaymentModal(false)} className="rounded-full h-10 flex-1 font-bold text-xs bg-background">বাতিল করুন</Button>
-            <Button 
+            <Button
               disabled={
                 paymentDetailTab === 'phone'
                   ? !manualDetails.senderNumber.trim()
@@ -1035,7 +1213,7 @@ export default function CheckoutPage() {
                   setShowPaymentModal(false);
                   toast.error('দয়া করে ডেলিভারি তথ্য সম্পূর্ণ করুন!');
                 }
-              }} 
+              }}
               className="rounded-full h-10 flex-1 font-black uppercase tracking-widest text-xs shadow-md shadow-primary/10"
             >
               পেমেন্ট নিশ্চিত করুন
@@ -1043,7 +1221,105 @@ export default function CheckoutPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ✅ Order Success Modal */}
+      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <DialogContent className="max-w-md p-0 overflow-hidden border-0 shadow-2xl">
+          <div className="flex flex-col items-center text-center p-8 gap-6">
+            {/* Animated icon */}
+            <div className="relative">
+              <div className="w-24 h-24 rounded-full bg-green-500/10 flex items-center justify-center border-4 border-green-500/20 shadow-xl shadow-green-500/20 animate-in zoom-in-50 duration-500">
+                <PartyPopper className="w-12 h-12 text-green-500" />
+              </div>
+              <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+                <CheckCircle2 className="w-4 h-4 text-white" />
+              </div>
+            </div>
+
+            {/* Text */}
+            <div className="space-y-2">
+              <h2 className="text-2xl font-black tracking-tight">অর্ডার সফল হয়েছে!</h2>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে। আমরা শীঘ্রই আপনার সাথে যোগাযোগ করবো।
+              </p>
+              {successOrderId && (
+                <p className="text-xs font-mono bg-muted px-3 py-1.5 rounded-full inline-block text-muted-foreground">
+                  Order ID: <span className="font-bold text-foreground">#{successOrderId.slice(-8).toUpperCase()}</span>
+                </p>
+              )}
+            </div>
+
+            {/* Buttons */}
+            <div className="flex flex-col gap-3 w-full pt-2">
+              <Button
+                onClick={() => { setShowSuccessModal(false); router.push('/shop'); }}
+                className="w-full h-11 rounded-full font-bold shadow-lg shadow-primary/20"
+              >
+                <ShoppingBag className="w-4 h-4 mr-2" />
+                শপিং চালিয়ে যান
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => { setShowSuccessModal(false); router.push('/dashboard'); }}
+                className="w-full h-11 rounded-full font-bold"
+              >
+                আমার অর্ডার দেখুন
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ❌ Payment Failed Modal */}
+      <Dialog open={showFailModal} onOpenChange={setShowFailModal}>
+        <DialogContent className="max-w-md p-0 overflow-hidden border-0 shadow-2xl">
+          <div className="flex flex-col items-center text-center p-8 gap-6">
+            {/* Icon */}
+            <div className="w-24 h-24 rounded-full bg-destructive/10 flex items-center justify-center border-4 border-destructive/20 shadow-xl shadow-destructive/20 animate-in zoom-in-50 duration-500">
+              <XCircle className="w-12 h-12 text-destructive" />
+            </div>
+
+            {/* Text */}
+            <div className="space-y-2">
+              <h2 className="text-2xl font-black tracking-tight text-destructive">পেমেন্ট ব্যর্থ হয়েছে</h2>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                আপনার পেমেন্ট সম্পন্ন হয়নি। পুনরায় চেষ্টা করুন অথবা COD পেমেন্ট বেছে নিন।
+              </p>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex flex-col gap-3 w-full pt-2">
+              <Button
+                onClick={() => setShowFailModal(false)}
+                className="w-full h-11 rounded-full font-bold"
+              >
+                পুনরায় চেষ্টা করুন
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => { setShowFailModal(false); router.push('/shop'); }}
+                className="w-full h-11 rounded-full font-bold"
+              >
+                শপে ফিরে যান
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={
+      <div className="container py-24 flex justify-center items-center h-[50vh]">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    }>
+      <CheckoutContent />
+    </Suspense>
   );
 }
 

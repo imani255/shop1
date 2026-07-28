@@ -6,21 +6,15 @@ import GlobalSettings from '@/models/GlobalSettings';
  * This avoids external library dependency issues with fetch/axios in Next.js
  */
 export async function initPayment(data: any) {
-  let final_store_id = process.env.SSLCOMMERZ_STORE_ID;
-  let final_store_passwd = process.env.SSLCOMMERZ_STORE_PASSWORD;
-  const is_live = process.env.SSLCOMMERZ_IS_LIVE === 'true' || process.env.SSLCOMMERZ_IS_SANDBOX !== 'true';
+  const settings = await GlobalSettings.findOne().lean() as any;
+  const sslConfig = settings?.paymentConfig?.sslcommerz;
 
-  // Fallback to database if not in env
-  if (!final_store_id || !final_store_passwd) {
-    const settings = await GlobalSettings.findOne().lean() as any;
-    const sslConfig = settings?.paymentConfig?.sslcommerz;
-    
-    final_store_id = sslConfig?.storeId || final_store_id;
-    final_store_passwd = sslConfig?.storePassword || final_store_passwd;
-  }
+  const final_store_id = sslConfig?.storeId;
+  const final_store_passwd = sslConfig?.storePassword;
+  const is_live = sslConfig?.isSandbox === false;
 
   if (!final_store_id || !final_store_passwd) {
-    throw new Error('SSLCommerz credentials not found in env or database');
+    throw new Error('SSLCommerz credentials not found in database');
   }
 
   const baseUrl = is_live 
@@ -72,18 +66,12 @@ export async function validatePayment(data: any) {
     return null;
   }
 
-  let final_store_id = process.env.SSLCOMMERZ_STORE_ID;
-  let final_store_passwd = process.env.SSLCOMMERZ_STORE_PASSWORD;
-  const is_live = process.env.SSLCOMMERZ_IS_LIVE === 'true' || process.env.SSLCOMMERZ_IS_SANDBOX !== 'true';
+  const settings = await GlobalSettings.findOne().lean() as any;
+  const sslConfig = settings?.paymentConfig?.sslcommerz;
 
-  // Fallback to database if not in env
-  if (!final_store_id || !final_store_passwd) {
-    const settings = await GlobalSettings.findOne().lean() as any;
-    const sslConfig = settings?.paymentConfig?.sslcommerz;
-    
-    final_store_id = sslConfig?.storeId || final_store_id;
-    final_store_passwd = sslConfig?.storePassword || final_store_passwd;
-  }
+  const final_store_id = sslConfig?.storeId;
+  const final_store_passwd = sslConfig?.storePassword;
+  const is_live = sslConfig?.isSandbox === false;
 
   if (!final_store_id || !final_store_passwd) {
     console.error('SSLCommerz credentials not found for validation');

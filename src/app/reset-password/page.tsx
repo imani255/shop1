@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 import {
   Form,
   FormControl,
@@ -158,10 +159,10 @@ function ResetPasswordForm() {
                 <FormLabel>New Password</FormLabel>
                 <div className="relative">
                   <FormControl>
-                    <Input 
-                      placeholder="••••••••" 
-                      type={showPassword ? "text" : "password"} 
-                      {...field} 
+                    <Input
+                      placeholder="••••••••"
+                      type={showPassword ? "text" : "password"}
+                      {...field}
                       disabled={isLoading}
                       className="h-11 focus-visible:ring-primary/20 pr-10"
                     />
@@ -197,10 +198,10 @@ function ResetPasswordForm() {
                 <FormLabel>Confirm New Password</FormLabel>
                 <div className="relative">
                   <FormControl>
-                    <Input 
-                      placeholder="••••••••" 
-                      type={showConfirmPassword ? "text" : "password"} 
-                      {...field} 
+                    <Input
+                      placeholder="••••••••"
+                      type={showConfirmPassword ? "text" : "password"}
+                      {...field}
                       disabled={isLoading}
                       className="h-11 focus-visible:ring-primary/20 pr-10"
                     />
@@ -228,9 +229,9 @@ function ResetPasswordForm() {
             )}
           />
 
-          <Button 
-            type="submit" 
-            className="w-full h-11 text-base font-semibold" 
+          <Button
+            type="submit"
+            className="w-full h-11 text-base font-semibold"
             disabled={isLoading}
           >
             {isLoading ? (
@@ -249,28 +250,31 @@ export default function ResetPasswordPage() {
   return (
     <div className="relative min-h-screen">
       {/* Left Side: Image Banner */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, x: -50 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
         className="fixed inset-y-0 left-0 hidden w-1/2 bg-muted lg:block"
       >
-        <img
+        <Image
           src="/assets/login_banner.jpg"
           alt="Reset Password Banner"
+          fill
+          priority
+          sizes="50vw"
           className="absolute inset-0 h-full w-full object-cover brightness-[0.8] contrast-[1.1]"
         />
         <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent flex flex-col justify-end p-12">
-           <motion.div
-             initial={{ opacity: 0, y: 20 }}
-             animate={{ opacity: 1, y: 0 }}
-             transition={{ delay: 0.4, duration: 0.6 }}
-           >
-             <h2 className="text-4xl font-bold text-white mb-4 font-serif">Restore Access</h2>
-             <p className="text-lg text-white/80 max-w-md">
-               Take a moment to set a strong password to keep your account safe and secure.
-             </p>
-           </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+          >
+            <h2 className="text-4xl font-bold text-white mb-4 font-serif">Restore Access</h2>
+            <p className="text-lg text-white/80 max-w-md">
+              Take a moment to set a strong password to keep your account safe and secure.
+            </p>
+          </motion.div>
         </div>
       </motion.div>
 
@@ -280,7 +284,7 @@ export default function ResetPasswordPage() {
           <Logo />
         </div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}

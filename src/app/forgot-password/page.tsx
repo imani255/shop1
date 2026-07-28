@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 import {
   Form,
   FormControl,
@@ -68,9 +69,12 @@ export default function ForgotPasswordPage() {
         transition={{ duration: 0.8, ease: "easeOut" }}
         className="fixed inset-y-0 left-0 hidden w-1/2 bg-muted lg:block"
       >
-        <img
+        <Image
           src="/assets/forgetpassrod.webp"
           alt="Forgot Password Banner"
+          fill
+          priority
+          sizes="50vw"
           className="absolute inset-0 h-full w-full object-cover brightness-[0.8] contrast-[1.1]"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-12">

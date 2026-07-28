@@ -43,7 +43,7 @@ export async function PUT(
     const { slug } = await params;
     const session = await auth();
 
-    if (!session || !session.user || !(['admin', 'super_admin'].includes((session.user as any)?.role))) {
+    if (!session || !session.user || !(['admin', 'super_admin', 'manager'].includes((session.user as any)?.role))) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -79,7 +79,9 @@ export async function PUT(
             size: v.size,
             sku: v.sku,
             image: v.image,
+            images: Array.isArray(v.images) ? v.images : (v.image ? [v.image] : []),
             price: Number.isFinite(parseFloat(v.price)) ? parseFloat(v.price) : 0,
+            purchasePrice: Number.isFinite(parseFloat(v.purchasePrice)) ? parseFloat(v.purchasePrice) : undefined,
             salePrice: Number.isFinite(parseFloat(v.salePrice)) ? parseFloat(v.salePrice) : undefined,
             stock: Number.isFinite(parseInt(v.stock, 10)) ? parseInt(v.stock, 10) : 0,
             discountRate: Number.isFinite(parseFloat(v.discountRate)) ? parseFloat(v.discountRate) : undefined,
@@ -178,7 +180,7 @@ export async function DELETE(
     const { slug } = await params;
     const session = await auth();
 
-    if (!session || !session.user || !(['admin', 'super_admin'].includes((session.user as any)?.role))) {
+    if (!session || !session.user || !(['admin', 'super_admin', 'manager'].includes((session.user as any)?.role))) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 

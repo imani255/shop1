@@ -13,6 +13,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useAppDispatch } from '@/store/hooks';
 import { addToCart } from '@/store/slices/cartSlice';
 import { toast } from 'sonner';
+import Image from 'next/image';
 import { fbEvent } from '@/lib/fpixel';
 import { ttEvent } from '@/lib/tiktok';
 
@@ -107,7 +108,7 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
       price: (displaySalePrice !== undefined && displaySalePrice !== null) ? displaySalePrice : displayPrice,
       basePrice: displayPrice,
       quantity: 1,
-      image: activeVariant?.image || product.images?.[0],
+      image: activeVariant?.images?.[0] || activeVariant?.image || product.images?.[0],
       color: selectedColor || undefined,
       size: selectedSize || undefined
     }));
@@ -141,9 +142,11 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
         
         <div className="flex gap-4 py-4 border-b">
           <div className="h-16 w-16 overflow-hidden rounded-md border flex-shrink-0">
-            <img 
-              src={activeVariant?.image || product.images?.[0] || '/placeholder.jpg'} 
+            <Image 
+              src={activeVariant?.images?.[0] || activeVariant?.image || product.images?.[0] || '/placeholder.jpg'} 
               alt={product.name} 
+              width={64}
+              height={64}
               className="h-full w-full object-cover" 
             />
           </div>
@@ -168,19 +171,54 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
             <div className="space-y-2">
               <span className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Color: <span className="text-foreground">{selectedColor}</span></span>
               <div className="flex flex-wrap gap-2">
-                {uniqueColors.map((colorName, i) => (
-                  <button
-                    key={i}
-                    onClick={(e) => { e.preventDefault(); setSelectedColor(colorName); }}
-                    className={`px-3 py-1.5 text-sm rounded-md border transition-all ${
-                      selectedColor === colorName
-                        ? 'border-primary bg-primary/10 text-primary font-bold'
-                        : 'hover:border-primary/50'
-                    }`}
-                  >
-                    {colorName}
-                  </button>
-                ))}
+                {uniqueColors.map((colorName, i) => {
+                  const isOutOfStock = product.variants
+                    ?.filter((v: any) => v.color === colorName)
+                    .every((v: any) => (v.stock || 0) <= 0);
+
+                  const variantWithImage = product.variants?.find(
+                    (v: any) => v.color === colorName && (v.image || (v.images && v.images.length > 0))
+                  );
+                  const imageUrl = variantWithImage?.images?.[0] || variantWithImage?.image;
+
+                  return (
+                    <button
+                      key={i}
+                      disabled={isOutOfStock}
+                      onClick={(e) => { e.preventDefault(); setSelectedColor(colorName); }}
+                      title={colorName}
+                      className={`relative rounded-lg overflow-hidden transition-all duration-200 border-2 ${
+                        selectedColor === colorName
+                          ? 'border-primary ring-2 ring-primary/20 scale-105 shadow-md'
+                          : isOutOfStock
+                            ? 'border-dashed border-muted bg-muted/20 opacity-40 cursor-not-allowed'
+                            : 'border-muted hover:border-primary/50 hover:scale-102'
+                      } ${imageUrl ? 'p-0.5 w-12 h-12' : 'px-3 py-1.5 text-sm'}`}
+                    >
+                      {imageUrl ? (
+                        <div className="relative w-full h-full rounded-md overflow-hidden bg-white">
+                          <Image
+                            src={imageUrl}
+                            alt={colorName}
+                            fill
+                            sizes="48px"
+                            className="object-contain p-0.5"
+                          />
+                          {isOutOfStock && (
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                              <span className="text-[8px] font-black uppercase text-white tracking-tighter">Out</span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          {colorName}
+                          {isOutOfStock && <span className="block text-[8px] mt-0.5 opacity-50">Sold Out</span>}
+                        </>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}

@@ -33,12 +33,12 @@ export async function POST(req: NextRequest) {
     }
     const settings = settingsDoc.toObject({ getters: true });
 
-    const apiKey = process.env.STEADFAST_API_KEY;
-    const secretKey = process.env.STEADFAST_SECRET_KEY;
+        const apiKey = settings.courierConfig?.steadfast?.apiKey;
+    const secretKey = settings.courierConfig?.steadfast?.secretKey;
 
     if (!apiKey || !secretKey) {
       return NextResponse.json({
-        message: 'Steadfast API credentials are not configured in your .env file.'
+        message: 'Steadfast API credentials are not configured in your settings.'
       }, { status: 400 });
     }
 
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
           courierName: 'Steadfast',
           consignmentId: response.consignment_id?.toString(),
           trackingId: response.tracking_code?.toString(),
-          trackingUrl: response.tracking_code ? `https://portal.steadfast.com.bd/tracking/${response.tracking_code}` : undefined,
+          trackingUrl: response.tracking_code ? `https://steadfast.com.bd/t/${response.tracking_code}` : undefined,
           courierStatus: response.status
         };
 

@@ -3,12 +3,10 @@
 import { useSession, signOut } from 'next-auth/react';
 import { 
   User, 
-  LayoutDashboard, 
-  LogOut, 
-  Settings,
-  Store
+  LogOut,
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { ModeToggle } from '@/components/mode-toggle';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -42,9 +40,11 @@ export default function AdminTopbar() {
             <DropdownMenuTrigger nativeButton={true} render={
               <Button variant="secondary" size="icon" className="rounded-full overflow-hidden border border-primary/20">
                 {session.user.image ? (
-                  <img 
+                  <Image 
                     src={session.user.image} 
                     alt={session.user.name || "Admin"} 
+                    width={40}
+                    height={40}
                     className="h-full w-full object-cover"
                     referrerPolicy="no-referrer"
                   />
@@ -65,19 +65,6 @@ export default function AdminTopbar() {
                   </div>
                 </DropdownMenuLabel>
               </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem render={<Link href="/admin/dashboard" />} nativeButton={false}>
-                <LayoutDashboard className="mr-2 h-4 w-4" />
-                <span>Admin Dashboard</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem render={<Link href="/" />} nativeButton={false}>
-                <Store className="mr-2 h-4 w-4" />
-                <span>Visit Shop</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem render={<Link href="/admin/settings" />} nativeButton={false}>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 variant="destructive"

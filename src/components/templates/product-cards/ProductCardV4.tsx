@@ -45,17 +45,29 @@ interface ProductCardProps {
     variants?: any[];
     ratings?: number;
     numReviews?: number;
+    sku?: string;
   };
   isFlashSale?: boolean;
 }
 
-export default function ProductCardV4({ product, isFlashSale }: ProductCardProps) {
+export default function ProductCardV4({ product: initialProduct, isFlashSale }: ProductCardProps) {
   const dispatch = useAppDispatch();
   const { data: session, status } = useSession();
   const wishlist = useAppSelector((state) => state.wishlist.items);
-  const isInWishlist = wishlist.includes(product._id);
+  const isInWishlist = wishlist.includes(initialProduct._id);
   const router = useRouter();
   const isAdmin = (session?.user as any)?.role === 'admin';
+
+  const firstVariant = initialProduct.variants && initialProduct.variants.length > 0 ? initialProduct.variants[0] : null;
+  const product = firstVariant ? {
+    ...initialProduct,
+    price: firstVariant.price,
+    salePrice: firstVariant.salePrice,
+    stock: firstVariant.stock ?? initialProduct.stock,
+    sku: firstVariant.sku ?? initialProduct.sku,
+    images: firstVariant.image ? [firstVariant.image, ...initialProduct.images.filter((img: string) => img !== firstVariant.image)] : initialProduct.images
+  } : initialProduct;
+
   const hasVariants = product.variants && product.variants.length > 0;
 
   const [showQuickViewModal, setShowQuickViewModal] = useState(false);
@@ -154,7 +166,7 @@ export default function ProductCardV4({ product, isFlashSale }: ProductCardProps
     >
       {/* Boutique Image Container */}
       <div className="relative aspect-[3/4] rounded-none overflow-hidden transition-all duration-700 group-hover:shadow-[0_40px_80px_-20px_rgba(var(--primary-rgb),0.25)] group-hover:-translate-y-4">
-        <Link href={`/product/${product.slug}`} className="block h-full w-full">
+        <Link href={`/product/${product.slug}`} className="relative block h-full w-full">
           {product.images?.length > 1 ? (
             <>
               <Image
@@ -294,7 +306,7 @@ export default function ProductCardV4({ product, isFlashSale }: ProductCardProps
       </div>
 
       <QuickViewModal
-        product={product}
+        product={initialProduct}
         isOpen={showQuickViewModal}
         onClose={() => setShowQuickViewModal(false)}
       />

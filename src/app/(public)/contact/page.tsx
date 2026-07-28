@@ -19,7 +19,7 @@ async function getSettings() {
       return {
         brandName: "Care Mom",
         contact: {
-          email: "support@caremombd.com",
+          email: "support@caremom.com",
           phone: "+8801234567890",
           address: "Dhaka, Bangladesh"
         },
@@ -120,8 +120,8 @@ export default async function ContactPage() {
                   <p className="text-muted-foreground mb-6 break-all max-w-[240px]">
                     {item.value}
                   </p>
-                  <a 
-                    href={item.href || "#"} 
+                  <a
+                    href={item.href || "#"}
                     target={item.isExternal ? "_blank" : undefined}
                     rel={item.isExternal ? "noopener noreferrer" : undefined}
                     className="inline-flex items-center gap-2 text-sm font-bold text-primary hover:underline"
@@ -144,15 +144,15 @@ export default async function ContactPage() {
                   Visit our physical store to experience our products firsthand. Our friendly staff is always ready to assist you.
                 </p>
                 <div className="aspect-video w-full rounded-2xl overflow-hidden shadow-md border bg-muted">
-                    <iframe 
-                      title="Care Mom Location"
-                      width="100%" 
-                      height="100%" 
-                      style={{ border: 0 }} 
-                      src={`https://maps.google.com/maps?q=${encodeURIComponent(contact?.address || "")}&t=&z=15&ie=UTF8&iwloc=&output=embed`} 
-                      allowFullScreen
-                      loading="lazy"
-                    ></iframe>
+                  <iframe
+                    title="Care Mom Location"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    src={`https://maps.google.com/maps?q=${encodeURIComponent(contact?.address || "")}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                    allowFullScreen
+                    loading="lazy"
+                  ></iframe>
                 </div>
               </div>
             </div>
@@ -163,14 +163,14 @@ export default async function ContactPage() {
                 <p className="text-muted-foreground mb-8">
                   Follow us on social media to stay updated with our latest collections, offers, and news from {brandName}.
                 </p>
-                
+
                 {socialItems.length > 0 ? (
                   <div className="flex flex-wrap gap-4">
                     {socialItems.map((social, idx) => (
-                      <a 
-                        key={idx} 
-                        href={social.url} 
-                        target="_blank" 
+                      <a
+                        key={idx}
+                        href={social.url}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="h-12 w-12 rounded-full border flex items-center justify-center hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 shadow-sm"
                         title={social.name}

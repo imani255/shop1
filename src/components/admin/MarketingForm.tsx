@@ -276,7 +276,7 @@ export function MarketingForm() {
                     <FormItem>
                       <FormLabel>Facebook Access Token (CAPI)</FormLabel>
                       <FormControl>
-                        <Input type="password" placeholder="EAAB..." {...field} disabled={isSubmitting} />
+                        <Input type="text" placeholder="EAAB..." {...field} disabled={isSubmitting} />
                       </FormControl>
                       <FormDescription>
                         System user access token for Conversions API.
@@ -350,7 +350,7 @@ export function MarketingForm() {
                       <FormItem>
                         <FormLabel>TikTok Access Token (Events API)</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="tt_..." {...field} disabled={isSubmitting} />
+                          <Input type="text" placeholder="tt_..." {...field} disabled={isSubmitting} />
                         </FormControl>
                         <FormDescription>
                           TikTok developer access token for server-side Events API tracking.

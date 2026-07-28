@@ -1,17 +1,43 @@
 'use client'; 
 
+import { useEffect } from 'react';
 import { CheckCircle2, Star } from 'lucide-react';
+import Image from 'next/image';
+import { useAppDispatch } from '@/store/hooks';
+import { addToCart } from '@/store/slices/cartSlice';
+import { toast } from 'sonner';
+import { fbEvent } from '@/lib/fpixel';
+import { ttEvent } from '@/lib/tiktok';
 
-export default function ProductShowcase({ content }: { content: any }) {
+export default function ProductShowcase({ content, productShowcaseCount }: { content: any; productShowcaseCount?: number }) {
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    if (content.productId) {
+      const viewContentPayload = {
+        content_ids: [content.productId],
+        content_name: content.title,
+        content_type: 'product',
+        value: content.salePrice || content.price,
+        currency: 'BDT'
+      };
+      fbEvent('ViewContent', viewContentPayload, { em: '', ph: '' });
+      ttEvent('ViewContent', viewContentPayload, { em: '', ph: '' });
+    }
+  }, [content.productId, content.title, content.salePrice, content.price]);
+
   return (
     <div className="container mx-auto px-4 max-w-6xl">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         {/* Product Image */}
         <div className="relative group">
           <div className="absolute -inset-4 bg-primary/10 rounded-[3rem] blur-2xl group-hover:bg-primary/20 transition-all" />
-          <img 
+          <Image 
             src={content.image || '/assets/product-placeholder.webp'} 
             alt={content.title}
+            width={600}
+            height={600}
+            priority
             className="relative w-full h-auto rounded-[2rem] shadow-2xl object-cover"
           />
           {content.price > 0 && content.salePrice && content.salePrice < content.price && (
@@ -44,8 +70,8 @@ export default function ProductShowcase({ content }: { content: any }) {
             </div>
           </div>
 
-          <p className="text-lg text-gray-600 leading-relaxed">
-            {content.description}
+          <p className="text-lg text-gray-600 leading-relaxed line-clamp-3">
+            {content.shortDescription || content.description}
           </p>
 
           {Array.isArray(content.benefits) && content.benefits.length > 0 && (
@@ -59,13 +85,73 @@ export default function ProductShowcase({ content }: { content: any }) {
             </div>
           )}
 
-          <div className="pt-4">
+          <div className="pt-4 flex flex-wrap gap-4">
              <a 
                href="#order" 
+               onClick={(e) => {
+                 e.preventDefault();
+                 window.dispatchEvent(new CustomEvent('select-lp-product', {
+                   detail: {
+                     productId: content.productId,
+                     productName: content.title,
+                     price: content.salePrice || content.price,
+                     productImage: content.image
+                   }
+                 }));
+                 setTimeout(() => {
+                   document.getElementById('order')?.scrollIntoView({ behavior: 'smooth' });
+                 }, 100);
+               }}
                className="inline-flex items-center justify-center w-full md:w-auto bg-gray-900 text-white h-14 px-12 rounded-2xl font-black text-lg hover:bg-primary transition-colors shadow-lg"
              >
-               Buy Now
+               Order Now
              </a>
+             {productShowcaseCount && productShowcaseCount > 1 && (
+               <button
+                 onClick={() => {
+                   dispatch(addToCart({
+                     productId: content.productId,
+                     name: content.title,
+                     price: content.salePrice || content.price,
+                     basePrice: content.price,
+                     quantity: 1,
+                     image: content.image
+                   }));
+                   
+                   // Add To Cart Pixel Tracking
+                   const addToCartPayload = {
+                     content_ids: [content.productId],
+                     content_name: content.title,
+                     content_type: 'product',
+                     value: content.salePrice || content.price,
+                     currency: 'BDT',
+                     num_items: 1,
+                     contents: [{
+                       id: content.productId,
+                       quantity: 1,
+                       item_price: content.salePrice || content.price
+                     }]
+                   };
+                   fbEvent('AddToCart', addToCartPayload, { em: '', ph: '' });
+                   ttEvent('AddToCart', addToCartPayload, { em: '', ph: '' });
+                   
+                   // Propagate selection to the checkout form
+                   window.dispatchEvent(new CustomEvent('select-lp-product', {
+                     detail: {
+                       productId: content.productId,
+                       productName: content.title,
+                       price: content.salePrice || content.price,
+                       productImage: content.image
+                     }
+                   }));
+                   
+                   toast.success(`"${content.title}" added to cart!`);
+                 }}
+                 className="inline-flex items-center justify-center w-full md:w-auto border-2 border-gray-900 text-gray-900 h-14 px-10 rounded-2xl font-black text-lg hover:bg-gray-100 transition-colors"
+               >
+                 Add to Cart
+               </button>
+             )}
           </div>
         </div>
       </div>

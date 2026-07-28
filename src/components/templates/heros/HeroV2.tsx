@@ -119,7 +119,7 @@ export default function HeroV2({ banners }: HeroSliderProps) {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.3 }}
                   >
-                    <h1 className="text-[18px] sm:text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight tracking-tighter mb-4 sm:mb-8 drop-shadow-2xl uppercase">
+                    <h1 className="text-[18px] sm:text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight tracking-tighter mb-6 sm:mb-8 drop-shadow-2xl uppercase">
                       {banner.title}
                     </h1>
 

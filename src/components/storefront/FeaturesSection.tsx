@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Truck, ShieldCheck, Headphones, Zap, CreditCard, RefreshCcw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';

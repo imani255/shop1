@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import connectToDatabase from '@/lib/db';
 import Order from '@/models/Order';
+import GlobalSettings from '@/models/GlobalSettings';
 
 // FAIL ROUTE
 export async function POST(req: NextRequest) {
   try {
     const signature = req.headers.get('x-signature');
-    const secret = process.env.SSLCOMMERZ_STORE_PASSWORD;
+    await connectToDatabase();
+    const settings = await GlobalSettings.findOne().sort({ updatedAt: -1 }).lean() as any;
+    const secret = settings?.paymentConfig?.sslcommerz?.storePassword;
     const rawBody = await req.text();
 
     if (!signature || !secret) {
@@ -40,8 +43,8 @@ export async function POST(req: NextRequest) {
 
     const origin = req.nextUrl.origin;
     const redirectUrl = orderId 
-      ? `${origin}/checkout/fail?id=${orderId}`
-      : `${origin}/checkout/fail`;
+      ? `${origin}/checkout?order=failed&id=${orderId}`
+      : `${origin}/checkout?order=failed`;
       
     return NextResponse.redirect(redirectUrl, 303);
   } catch (error: any) {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -44,7 +45,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import Swal from 'sweetalert2';
-import { slugify } from '@/lib/slugify';
+import { slugify, sanitizeSlugInput } from '@/lib/slugify';
 
 const categorySchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -229,7 +230,13 @@ export default function CategoriesPage() {
                       <FormItem>
                         <FormLabel>Slug</FormLabel>
                         <FormControl>
-                          <Input placeholder="category-slug" {...field} />
+                          <Input 
+                            placeholder="category-slug" 
+                            {...field} 
+                            onChange={(e) => {
+                              field.onChange(sanitizeSlugInput(e.target.value));
+                            }}
+                          />
                         </FormControl>
                         <FormDescription>
                           Unique URL-friendly name.
@@ -332,7 +339,7 @@ export default function CategoriesPage() {
                   <TableCell>
                     <div className="h-10 w-10 overflow-hidden rounded-md border bg-muted">
                       {category.image ? (
-                        <img src={category.image} alt={category.name} className="h-full w-full object-cover" />
+                        <Image src={category.image} alt={category.name} width={40} height={40} className="h-full w-full object-cover" />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center">
                           <Plus className="h-4 w-4 text-muted-foreground" />

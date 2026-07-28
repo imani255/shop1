@@ -1,6 +1,7 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, X, Bot, User, Loader2, MessageCircleQuestion } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,52 @@ interface Message {
 export function AIChatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
+
+  const renderMessageContent = (content: string) => {
+    const parts = [];
+    const regex = /\[([^\]]+)\]\(([^)]+)\)/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(content)) !== null) {
+      const [fullMatch, text, url] = match;
+      const matchIndex = match.index;
+
+      if (matchIndex > lastIndex) {
+        parts.push(content.substring(lastIndex, matchIndex));
+      }
+
+      const isRelative = url.startsWith('/') && !url.startsWith('//');
+      const isHttp = url.startsWith('http://') || url.startsWith('https://');
+      const isMailto = url.startsWith('mailto:');
+
+      if (!isRelative && !isHttp && !isMailto) {
+        parts.push(fullMatch);
+      } else {
+        const isExternal = isHttp;
+        parts.push(
+          <Link
+            key={matchIndex}
+            href={url}
+            onClick={() => setIsOpen(false)}
+            className="underline text-primary hover:opacity-80 font-bold"
+            target={isExternal ? "_blank" : undefined}
+            rel={isExternal ? "noopener noreferrer" : undefined}
+          >
+            {text}
+          </Link>
+        );
+      }
+
+      lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < content.length) {
+      parts.push(content.substring(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : content;
+  };
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: 'Hi there! I am your Care Mom AI assistant. How can I help you today?' },
   ]);
@@ -65,16 +112,25 @@ export function AIChatbot() {
 
   return (
     <>
-      {/* Navbar Trigger Button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => setIsOpen(true)}
-        className="h-10 w-10 hover:text-primary transition-all bg-transparent hover:bg-transparent hover:scale-110 active:scale-90"
-        aria-label="Open AI chat"
+      {/* Floating Trigger Button */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.5, x: 20 }}
+        animate={{ opacity: 1, scale: 1, x: 0 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        className="relative group"
       >
-        <MessageCircleQuestion className="h-5 w-5" />
-      </Button>
+        <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-white text-black text-[10px] font-bold px-2 py-1 rounded shadow-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-neutral-100">
+          Ask AI Assistant
+        </div>
+        <Button
+          onClick={() => setIsOpen(true)}
+          className="rounded-full shadow-2xl h-10 w-10 md:h-12 md:w-12 bg-primary hover:bg-primary/95 text-primary-foreground border-2 border-white transition-all flex items-center justify-center p-0"
+          aria-label="Open AI chat"
+        >
+          <Bot className="h-7 w-7 md:h-8 md:w-8" />
+        </Button>
+      </motion.div>
 
       {/* Chat Window */}
       <AnimatePresence>
@@ -83,7 +139,7 @@ export function AIChatbot() {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-6 right-6 z-[60] w-[90vw] max-w-[400px] h-[600px] max-h-[80vh] bg-background border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+            className="fixed bottom-20 md:bottom-6 right-6 z-[60] w-[90vw] max-w-[400px] h-[600px] max-h-[80vh] bg-background border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="p-4 bg-primary text-primary-foreground flex items-center justify-between shadow-md">
@@ -130,12 +186,12 @@ export function AIChatbot() {
                         {msg.role === 'user' ? <User className="size-4" /> : <Bot className="size-4" />}
                       </div>
                       <div className={cn(
-                        "p-3 rounded-2xl text-sm shadow-sm",
+                        "p-3 rounded-2xl text-sm shadow-sm whitespace-pre-line",
                         msg.role === 'user'
                           ? "bg-primary text-primary-foreground rounded-tr-none"
                           : "bg-background text-foreground rounded-tl-none border"
                       )}>
-                        {msg.content}
+                        {msg.role === 'user' ? msg.content : renderMessageContent(msg.content)}
                       </div>
                     </motion.div>
                   ))}

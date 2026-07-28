@@ -85,6 +85,31 @@ export async function POST(req: NextRequest) {
     const { items, shippingAddress, paymentMethod, useWallet, couponCode, manualPaymentDetails } = validation.data;
     const clientProvidedDeliveryCharge = validation.data.deliveryCharge;
 
+    await connectToDatabase();
+
+    // Check for pending/unconfirmed orders ('Order Placed')
+    const queryConditions: any[] = [];
+    if (sessionUser?.user?.id) {
+      queryConditions.push({ user: sessionUser.user.id });
+    }
+    if (shippingAddress.phone) {
+      queryConditions.push({ 'shippingAddress.phone': shippingAddress.phone });
+    }
+
+    if (queryConditions.length > 0) {
+      const existingPendingOrder = await Order.findOne({
+        $or: queryConditions,
+        status: 'Order Placed',
+        deletedAt: null
+      });
+
+      if (existingPendingOrder) {
+        return NextResponse.json({
+          message: 'You already have a pending order. Please wait for it to be confirmed before placing another order.'
+        }, { status: 400 });
+      }
+    }
+
     const conn = await connectToDatabase();
 
     // Fetch Settings
@@ -298,8 +323,8 @@ export async function POST(req: NextRequest) {
     const freeDeliveryThreshold = settings?.freeDeliveryThreshold || 0;
     const isFreeDelivery = freeDeliveryThreshold > 0 && serverComputedTotal >= freeDeliveryThreshold;
 
-    const chargeInsideDhaka = settings?.deliveryChargeInsideDhaka || 60;
-    const chargeOutsideDhaka = settings?.deliveryChargeOutsideDhaka || 120;
+    const chargeInsideDhaka = settings?.deliveryChargeInsideDhaka ?? 60;
+    const chargeOutsideDhaka = settings?.deliveryChargeOutsideDhaka ?? 120;
 
     const serverComputedDeliveryCharge = isFreeDelivery ? 0 : (isDhaka ? chargeInsideDhaka : chargeOutsideDhaka);
 
@@ -434,6 +459,15 @@ export async function POST(req: NextRequest) {
 
     await session.commitTransaction();
 
+    // Delete matching abandoned cart on successful purchase
+    try {
+      const cleanPhone = shippingAddress.phone.replace(/\s+/g, '').trim();
+      const AbandonedCart = (await import('@/models/AbandonedCart')).default;
+      await AbandonedCart.findOneAndDelete({ phone: cleanPhone });
+    } catch (e) {
+      console.error('Failed to delete matching abandoned cart:', e);
+    }
+
     // Revalidate products cache to reflect new stock levels across the site
     try {
       const { revalidateTag } = await import('next/cache');
@@ -495,16 +529,58 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const fetchAll = searchParams.get('all') === 'true';
-    const isAdmin = ['admin', 'super_admin'].includes((session.user as any)?.role);
+    const isAdmin = ['admin', 'super_admin', 'manager'].includes((session.user as any)?.role);
+
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
+    const limit = Math.max(1, parseInt(searchParams.get('limit') || '20'));
+    const search = searchParams.get('search') || '';
+    const status = searchParams.get('status') || '';
+    const fromDate = searchParams.get('from') || '';
+    const toDate = searchParams.get('to') || '';
 
     await connectToDatabase();
 
     let query: any = { deletedAt: null };
     if (fetchAll && isAdmin) {
-      // Admins can see all orders
-      query = { deletedAt: null };
+      if (status && status !== 'All') {
+        query.status = status;
+      }
+      if (fromDate || toDate) {
+        query.createdAt = {};
+        if (fromDate) query.createdAt.$gte = new Date(fromDate);
+        if (toDate) {
+          const end = new Date(toDate);
+          end.setHours(23, 59, 59, 999);
+          query.createdAt.$lte = end;
+        }
+      }
+      if (search) {
+        const userIds = await User.find({
+          $or: [
+            { name: { $regex: search, $options: 'i' } },
+            { email: { $regex: search, $options: 'i' } }
+          ]
+        }).select('_id');
+        
+        const searchConditions: any[] = [
+          { "shippingAddress.fullName": { $regex: search, $options: 'i' } },
+          { "shippingAddress.phone": { $regex: search, $options: 'i' } }
+        ];
+
+        if (mongoose.Types.ObjectId.isValid(search)) {
+          searchConditions.push({ _id: search });
+        } else if (search.length >= 8) {
+          searchConditions.push({ shortId: { $regex: search, $options: 'i' } });
+        }
+
+        if (userIds.length > 0) {
+          searchConditions.push({ user: { $in: userIds.map(u => u._id) } });
+        }
+
+        query.$and = query.$and || [];
+        query.$and.push({ $or: searchConditions });
+      }
     } else {
-      // Normal users (or admins without ?all=true) see their own orders
       const userId = (session.user as any).id;
       if (!userId) {
         return NextResponse.json({ message: 'User ID missing from session' }, { status: 400 });
@@ -512,9 +588,96 @@ export async function GET(req: NextRequest) {
       query = { user: userId, deletedAt: null };
     }
 
-    const orders = await Order.find(query)
-      .sort({ createdAt: -1 })
-      .populate('user', 'name email'); // Populate user info for admin view
+    const totalCount = await Order.countDocuments(query);
+    
+    // Get counts for each status to display in tabs
+    let counts = {
+      all: 0,
+      placed: 0,
+      confirmed: 0,
+      paid: 0,
+      ready: 0,
+      released: 0,
+      delivered: 0,
+      cancelled: 0
+    };
+
+    if (fetchAll && isAdmin) {
+      const countQuery = { ...query };
+      delete countQuery.status; // Remove status filter to count all
+
+      const statusCounts = await Order.aggregate([
+        { $match: countQuery },
+        { $group: { _id: "$status", count: { $sum: 1 } } }
+      ]);
+
+      const totalAll = await Order.countDocuments(countQuery);
+      counts.all = totalAll;
+
+      statusCounts.forEach((sc: any) => {
+        if (sc._id === 'Order Placed') counts.placed = sc.count;
+        else if (sc._id === 'Confirmed') counts.confirmed = sc.count;
+        else if (sc._id === 'Paid') counts.paid = sc.count;
+        else if (sc._id === 'Ready for Delivery') counts.ready = sc.count;
+        else if (sc._id === 'Released for Delivery') counts.released = sc.count;
+        else if (sc._id === 'Delivered') counts.delivered = sc.count;
+        else if (sc._id === 'Cancelled') counts.cancelled = sc.count;
+      });
+    }
+    
+    let ordersQuery = Order.find(query).sort({ createdAt: -1 });
+
+    if (fetchAll && isAdmin) {
+      ordersQuery = ordersQuery.skip((page - 1) * limit).limit(limit);
+    }
+
+    const orders = await ordersQuery.populate('user', 'name email');
+
+    let processedOrders = orders;
+    if (fetchAll && isAdmin) {
+      processedOrders = await Promise.all(orders.map(async (order: any) => {
+        const phone = order.shippingAddress?.phone;
+        if (!phone) return { ...order.toObject(), isRepeat: false, isDuplicate: false };
+
+        const otherOrders = await Order.find({
+          "shippingAddress.phone": phone,
+          _id: { $ne: order._id },
+          deletedAt: null
+        }).select('items');
+
+        if (otherOrders.length === 0) {
+          return { ...order.toObject(), isRepeat: false, isDuplicate: false };
+        }
+
+        const isDuplicate = otherOrders.some(other => {
+          if (other.items.length !== order.items.length) return false;
+          return order.items.every((item: any) => {
+            return other.items.some((otherItem: any) => {
+              return String(otherItem.product) === String(item.product) &&
+                     String(otherItem.color || '') === String(item.color || '') &&
+                     String(otherItem.size || '') === String(item.size || '') &&
+                     otherItem.quantity === item.quantity;
+            });
+          });
+        });
+
+        return {
+          ...order.toObject(),
+          isRepeat: true,
+          isDuplicate
+        };
+      })) as any[];
+    }
+
+    if (fetchAll && isAdmin) {
+      return NextResponse.json({
+        orders: processedOrders,
+        totalCount,
+        page,
+        totalPages: Math.ceil(totalCount / limit),
+        counts
+      });
+    }
 
     return NextResponse.json(orders);
   } catch (error) {

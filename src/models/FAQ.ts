@@ -5,6 +5,7 @@ export interface IFAQ extends Document {
   answer: string;
   order: number;
   isActive: boolean;
+  embedding?: number[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -15,6 +16,7 @@ const FAQSchema: Schema<IFAQ> = new Schema(
     answer: { type: String, required: true },
     order: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },
+    embedding: { type: [Number] },
   },
   { timestamps: true }
 );

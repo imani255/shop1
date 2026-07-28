@@ -1,29 +1,21 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import connectToDatabase from "@/lib/db";
-import GlobalSettings from "@/models/GlobalSettings";
 import * as SocialIcons from '@/components/ui/social-icons';
 import {
   Circle,
   MapPin,
   Phone,
-  Mail
+  Mail,
+  Download
 } from 'lucide-react';
 import { Logo } from '@/components/ui/logo';
 import DeveloperLogo from '@/components/ui/developerlogo';
-
-
-async function getGlobalSettings() {
-  try {
-    const { headers } = await import('next/headers');
-    const headersList = await headers();
-    const hostname = headersList.get('host') || 'localhost';
-    const { getCachedSettings } = await import('@/lib/data-fetching');
-    return await getCachedSettings();
-  } catch (error) {
-    console.error('Error fetching settings for footer:', error);
-    return null;
-  }
-}
+import { useSettings } from '@/components/SettingsProvider';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 const socialIconMap: Record<string, any> = {
   facebook: SocialIcons.Facebook || Circle,
@@ -45,80 +37,124 @@ const socialLabels: Record<string, string> = {
   whatsapp: 'WhatsApp',
 };
 
-export default async function FooterV1() {
-  const settings = await getGlobalSettings();
+export default function FooterV1() {
+  const settings = useSettings();
   const socialLinks = settings?.socialLinks || {};
   const hasSocialLinks = Object.values(socialLinks).some(v => v);
+
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+
+  useEffect(() => {
+    // Check if running in standalone mode (already installed)
+    const checkStandalone = () => {
+      const isStandaloneMode =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as any).standalone ||
+        document.referrer.includes('android-app://');
+      setIsStandalone(isStandaloneMode);
+    };
+
+    checkStandalone();
+
+    // Detect iOS device
+    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    setIsIOS(isIOSDevice);
+
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    const handleAppInstalled = () => {
+      setDeferredPrompt(null);
+      setIsStandalone(true);
+      toast.success('App installed successfully!');
+    };
+
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (isIOS) {
+      toast.info('To install this app on your iPhone/iPad: Tap the "Share" icon in Safari and select "Add to Home Screen".', {
+        duration: 8000,
+      });
+      return;
+    }
+
+    if (!deferredPrompt) {
+      toast.info('To install the app: Click your browser menu (e.g. three dots icon in Chrome) and select "Install App" or "Add to Home Screen".', {
+        duration: 6000,
+      });
+      return;
+    }
+
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      toast.success('Thank you for installing our app!');
+    }
+    setDeferredPrompt(null);
+  };
+
+  const rawFooterNav = settings?.footerNavigation && settings.footerNavigation.length > 0
+    ? settings.footerNavigation
+    : [
+      { label: 'Shop All', href: '/shop' },
+      { label: 'Factory Profile', href: '/factory-profile' },
+      { label: 'New Arrivals', href: '/shop?filter=new' },
+      { label: 'Order Tracking', href: '/track-order' },
+      { label: 'Contact Support', href: '/contact' }
+    ];
+  const footerNav = rawFooterNav.filter((link: any) => link.label !== 'Contact Support');
 
   return (
     <footer className="border-t bg-background pt-12 mt-10">
       <div className="container mx-auto px-4 md:px-0">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
-          <div className="flex flex-col items-center text-center md:items-start md:text-left gap-4">
-            <Logo textClassName="text-xl md:text-2xl" />
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-5">
+          <div className="flex flex-col items-center text-center md:items-start md:text-left gap-4 lg:col-span-2">
+            <Logo textClassName="text-xl md:text-2xl whitespace-nowrap" />
             <p className="text-sm text-muted-foreground w-full md:w-4/5">
-              Your ultimate destination for quality products across multiple categories including groceries, electronics, and fashion.
+              If you can dream it, you can do it.
+              So, our dream is best clothing for our customers
             </p>
-            {hasSocialLinks && (
-              <div className="flex items-center gap-4 mt-2">
-                {Object.entries(socialLinks).map(([platform, url]) => {
-                if (!url) return null;
-                const Icon = socialIconMap[platform];
-                if (!Icon) return null;
 
-                let safeUrl = "#";
-                if (url && url !== '#') {
-                  try {
-                    const parsedUrl = new URL(url as string);
-                    if (['http:', 'https:', 'mailto:'].includes(parsedUrl.protocol)) {
-                      safeUrl = url as string;
-                    }
-                  } catch (e) {
-                    if (typeof url === 'string' && url.startsWith('/')) {
-                      safeUrl = url;
-                    }
-                  }
-                }
+            {/* PWA Download App Button */}
+            {!isStandalone && (
+              <Button
+                onClick={handleInstallClick}
+                variant="outline"
+                className="mt-2 rounded-full border-neutral-300 dark:border-neutral-700 text-foreground hover:bg-primary hover:text-primary-foreground font-black text-[10px] tracking-widest gap-2 h-9 px-4 uppercase transition-all duration-300"
+              >
+                <Download className="h-3.5 w-3.5 animate-bounce" />
+                Download App
+              </Button>
+            )}
+          </div>
 
-                return (
-                  <a
-                    key={platform}
-                    href={safeUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-primary transition-all hover:scale-110"
-                    aria-label={socialLabels[platform] || platform}
-                  >
-                    <Icon size={20} strokeWidth={2} />
-                  </a>
-                );
-              })}
-            </div>
-          )}
-        </div>
-        <div className="flex flex-col items-center text-center md:items-start md:text-left">
-            <h4 className="mb-4 text-sm font-semibold uppercase tracking-widest text-primary">Categories</h4>
+          <div className="flex flex-col items-center text-center md:items-start md:text-left md:pt-3">
+            <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-foreground">Quick Links</h2>
             <ul className="grid gap-2 text-sm text-muted-foreground">
-              <li>
-                <Link href="/shop?category=mens-clothing" className="hover:text-primary transition-colors">Men's Clothing</Link>
-              </li>
-              <li>
-                <Link href="/shop?category=womens-clothing" className="hover:text-primary transition-colors">Women's Clothing</Link>
-              </li>
-              <li>
-                <Link href="/shop?category=footwear" className="hover:text-primary transition-colors">Footwear</Link>
-              </li>
-              <li>
-                <Link href="/shop?category=home-lifestyle" className="hover:text-primary transition-colors">Home & Lifestyle</Link>
-              </li>
+              {footerNav.map((link: any) => (
+                <li key={link.label}>
+                  <Link href={link.href} className="hover:text-primary transition-colors">{link.label}</Link>
+                </li>
+              ))}
             </ul>
           </div>
-          <div className="flex flex-col items-center text-center md:items-start md:text-left">
-            <h4 className="mb-4 text-sm font-semibold uppercase tracking-widest text-primary">Information</h4>
+
+          <div className="flex flex-col items-center text-center md:items-start md:text-left md:pt-3">
+            <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-foreground">Information</h2>
             <ul className="grid gap-2 text-sm text-muted-foreground">
-              <li>
-                <Link href="/" className="hover:text-primary transition-colors">About Us</Link>
-              </li>
               <li>
                 <Link href="/contact" className="hover:text-primary transition-colors">Contact Us</Link>
               </li>
@@ -130,8 +166,9 @@ export default async function FooterV1() {
               </li>
             </ul>
           </div>
-          <div className="flex flex-col items-center text-center md:items-start md:text-left">
-            <h4 className="mb-4 text-sm font-semibold uppercase tracking-widest text-primary">Contact</h4>
+
+          <div className="flex flex-col items-center text-center md:items-start md:text-left md:pt-3">
+            <h2 className="mb-4 text-sm font-bold uppercase tracking-widest text-foreground">Contact</h2>
             <ul className="grid gap-3 text-sm text-muted-foreground">
               <li className="flex items-start justify-center md:justify-start gap-3">
                 <MapPin size={16} className="text-primary mt-0.5 shrink-0" />
@@ -143,9 +180,45 @@ export default async function FooterV1() {
               </li>
               <li className="flex items-center justify-center md:justify-start gap-3">
                 <Mail size={16} className="text-primary shrink-0" />
-                <span>{settings?.contact?.email || 'support@caremombd.com'}</span>
+                <span>{settings?.contact?.email || 'support@caremom.com'}</span>
               </li>
             </ul>
+            {hasSocialLinks && (
+              <div className="flex items-center justify-center md:justify-start gap-4 mt-4">
+                {Object.entries(socialLinks).map(([platform, url]) => {
+                  if (!url) return null;
+                  const Icon = socialIconMap[platform];
+                  if (!Icon) return null;
+
+                  let safeUrl = "#";
+                  if (url && url !== '#') {
+                    try {
+                      const parsedUrl = new URL(url as string);
+                      if (['http:', 'https:', 'mailto:'].includes(parsedUrl.protocol)) {
+                        safeUrl = url as string;
+                      }
+                    } catch (e) {
+                      if (typeof url === 'string' && url.startsWith('/')) {
+                        safeUrl = url;
+                      }
+                    }
+                  }
+
+                  return (
+                    <a
+                      key={platform}
+                      href={safeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-muted-foreground hover:text-primary transition-all hover:scale-110"
+                      aria-label={socialLabels[platform] || platform}
+                    >
+                      <Icon size={20} strokeWidth={2} />
+                    </a>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
@@ -162,4 +235,3 @@ export default async function FooterV1() {
     </footer>
   );
 }
-

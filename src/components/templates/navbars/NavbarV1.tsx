@@ -23,6 +23,7 @@ import {
 import { useSession, signOut } from 'next-auth/react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ModeToggle } from '@/components/mode-toggle';
 import { useAppSelector } from '@/store/hooks';
@@ -51,6 +52,8 @@ import Swal from 'sweetalert2';
 const navItems = [
   { href: '/', label: 'Home' },
   { href: '/shop', label: 'Shop' },
+  { href: '/factory-profile', label: 'Factory Profile' },
+  { href: '/catalog', label: 'Catalog' },
   { href: '/blog', label: 'Blogs' },
   { href: '/contact', label: 'Contact' },
 ];
@@ -60,6 +63,11 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isListening, setIsListening] = useState(false);
+  const [liveResults, setLiveResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recognitionRef = useRef<any>(null);
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -97,15 +105,15 @@ export default function Navbar() {
     if (status === 'authenticated') {
       fetch('/api/user/profile', { signal: controller.signal })
         .then(res => {
-          if (!res.ok) throw new Error('Failed to fetch profile');
+          if (!res.ok) return null;
           return res.json();
         })
         .then(data => {
-          if (isMounted) setProfile(data);
+          if (isMounted && data) setProfile(data);
         })
         .catch(err => {
           if (err.name !== 'AbortError') {
-            console.error('Failed to fetch profile', err);
+            console.warn('Could not load user profile data');
           }
         });
     } else {
@@ -139,13 +147,40 @@ export default function Navbar() {
 
   const mainCategories = categories.filter(c => !c.parentCategory);
 
+  // Live search debounce
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const trimmed = searchTerm.trim();
+    if (!trimmed) { setLiveResults([]); setShowDropdown(false); return; }
+    debounceRef.current = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const res = await fetch(`/api/products?search=${encodeURIComponent(trimmed)}&limit=6`);
+        if (res.ok) { const data = await res.json(); setLiveResults(data.products || []); setShowDropdown(true); }
+      } catch { /* silent */ } finally { setIsSearching(false); }
+    }, 400);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [searchTerm]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) setShowDropdown(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchTerm.trim()) {
       router.push(`/shop?search=${encodeURIComponent(searchTerm.trim())}`);
       setSearchTerm('');
+      setShowDropdown(false);
+      setLiveResults([]);
     }
   };
+
+  const handleResultClick = () => { setShowDropdown(false); setSearchTerm(''); setLiveResults([]); };
 
   const handleVoiceSearch = () => {
     const SpeechRecognition =
@@ -202,20 +237,22 @@ export default function Navbar() {
       <header className="sticky top-0 z-50 md:relative w-full bg-background border-b md:border-b-0">
         <div className="container mx-auto px-2 md:px-4">
           {/* Middle Main Row: Search | Logo | Icons */}
-          <div className="flex h-14 md:h-20 items-center justify-between px-1 md:px-6 border-b border-muted/30">
+          <div className="relative flex h-14 md:h-20 items-center justify-between px-1 md:px-6 border-b border-muted/30">
 
             {/* Desktop Search (Left) */}
-            <div className="hidden md:flex flex-1 items-center max-w-[280px]">
+            <div ref={searchContainerRef} className="hidden md:flex flex-1 items-center max-w-[280px] relative">
               <form onSubmit={handleSearch} className="relative w-full group">
                 <label htmlFor="navbar-search" className="sr-only">Search products</label>
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
                 <input
                   id="navbar-search"
                   type="text"
-                  placeholder={isListening ? 'Listening...' : 'Search...'}
+                  placeholder={isListening ? 'Listening...' : 'Search products...'}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onFocus={() => { if (liveResults.length > 0) setShowDropdown(true); }}
                   aria-label="Search products"
+                  autoComplete="off"
                   className="w-full bg-muted/40 border-none rounded-full py-2.5 pl-10 pr-10 text-xs focus:ring-1 focus:ring-primary/20 transition-all outline-none"
                 />
                 <button
@@ -228,6 +265,52 @@ export default function Navbar() {
                   {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                 </button>
               </form>
+              {showDropdown && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-background border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
+                  {isSearching ? (
+                    <div className="flex items-center justify-center py-6 gap-2 text-muted-foreground text-xs">
+                      <div className="h-3 w-3 rounded-full border-2 border-primary border-t-transparent animate-spin" /> Searching...
+                    </div>
+                  ) : liveResults.length > 0 ? (
+                    <>
+                      <ul className="divide-y divide-border/50">
+                        {liveResults.map((product) => {
+                          const price = product.salePrice ?? product.price;
+                          const image = product.images?.[0];
+                          return (
+                            <li key={product._id}>
+                              <Link href={`/products/${product.slug}`} onClick={handleResultClick} className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/50 transition-colors group">
+                                {image ? (
+                                  <div className="h-10 w-10 rounded-lg overflow-hidden flex-shrink-0 bg-muted">
+                                    <Image src={image} alt={product.name} width={40} height={40} className="h-full w-full object-cover" />
+                                  </div>
+                                ) : (
+                                  <div className="h-10 w-10 rounded-lg bg-muted flex-shrink-0 flex items-center justify-center">
+                                    <Search className="h-4 w-4 text-muted-foreground" />
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-semibold truncate group-hover:text-primary transition-colors">{product.name}</p>
+                                  <p className="text-[11px] text-primary font-bold">৳{price?.toLocaleString()}</p>
+                                </div>
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      <div className="border-t border-border/50 px-4 py-2.5">
+                        <Link href={`/shop?search=${encodeURIComponent(searchTerm.trim())}`} onClick={handleResultClick} className="flex items-center justify-center gap-1.5 text-xs font-semibold text-primary hover:underline">
+                          <Search className="h-3 w-3" /> See all results for &ldquo;{searchTerm}&rdquo;
+                        </Link>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center py-6 text-muted-foreground text-xs gap-1">
+                      <Search className="h-5 w-5 mb-1 opacity-40" /> No results found for &ldquo;{searchTerm}&rdquo;
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Mobile Menu Trigger */}
@@ -285,8 +368,12 @@ export default function Navbar() {
             </div>
 
             {/* Logo (Centered in desktop, Left-ish in mobile) */}
-            <div className="flex items-center justify-center flex-1 md:flex-initial">
-              <Logo textClassName="text-xl md:text-3xl" />
+            <div className="absolute left-1/2 -translate-x-1/2 md:static md:translate-x-0 flex items-center justify-center">
+              <Logo 
+                imageClassName="md:size-16" 
+                textClassName="text-lg md:text-3xl whitespace-nowrap" 
+                sizes="(max-width: 768px) 24px, 64px"
+              />
             </div>
 
             {/* Icons/Action Row (Right) */}
@@ -297,12 +384,7 @@ export default function Navbar() {
                 <ModeToggle />
               </div>
 
-              {/* AI Chatbot - Only visible if API key is set */}
-              {settings?.aiConfig?.openRouterApiKey && (
-                <div className="hidden sm:block">
-                  <AIChatbot />
-                </div>
-              )}
+
 
               {/* Wishlist */}
               <Link
@@ -327,123 +409,129 @@ export default function Navbar() {
               </Link>
 
               {/* Cart */}
-              <CartDrawer>
-                <div
-                  className="flex items-center gap-2 group cursor-pointer hover:text-primary px-2 py-1.5 rounded-full transition-all hover:scale-110 active:scale-95"
-                  aria-label="Shopping Cart"
-                  role="button"
-                >
-                  <div className="relative">
-                    <ShoppingCart className="h-5 w-5 stroke-[1.5]" />
-                    {cartCount > 0 && (
-                      <span className="absolute -top-2 -right-2 h-4 w-4 bg-primary text-white text-[8px] font-black rounded-full flex items-center justify-center animate-in zoom-in">
-                        {cartCount}
-                      </span>
-                    )}
+              <div className="hidden md:block">
+                <CartDrawer>
+                  <div
+                    className="flex items-center gap-2 group cursor-pointer hover:text-primary px-2 py-1.5 rounded-full transition-all hover:scale-110 active:scale-95"
+                    aria-label="Shopping Cart"
+                    role="button"
+                  >
+                    <div className="relative">
+                      <ShoppingCart className="h-5 w-5 stroke-[1.5]" />
+                      {cartCount > 0 && (
+                        <span className="absolute -top-2 -right-2 h-4 w-4 bg-primary text-white text-[8px] font-black rounded-full flex items-center justify-center animate-in zoom-in">
+                          {cartCount}
+                        </span>
+                      )}
+                    </div>
+                    <div className="hidden lg:flex flex-col text-left">
+                      <span className="text-[10px] font-bold leading-none tracking-tighter">৳{totalAmount.toLocaleString()}</span>
+                    </div>
                   </div>
-                  <div className="hidden lg:flex flex-col text-left">
-                    <span className="text-[10px] font-bold leading-none tracking-tighter">৳{totalAmount.toLocaleString()}</span>
-                  </div>
-                </div>
-              </CartDrawer>
+                </CartDrawer>
+              </div>
 
               {/* User Account (Right end) */}
-              {status === 'authenticated' && session?.user ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      className="flex items-center gap-2 px-2 py-1.5 rounded-xl transition-all cursor-pointer outline-none group hover:scale-110"
-                      aria-label="Account menu"
-                    >
-                      <div className="h-8 w-8 rounded-full border-2 border-primary/20 overflow-hidden group-hover:border-primary transition-all">
-                        <img
-                          src={session.user?.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user?.name || 'U')}`}
-                          alt={session.user?.name || 'User'}
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                      <span className="hidden sm:block text-xs font-bold text-gray-700 group-hover:text-primary transition-colors">
-                        {session.user?.name?.split(' ')[0]}
-                      </span>
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 mt-2">
-                    <DropdownMenuGroup>
-                      <DropdownMenuLabel className="font-serif">
-                        <div className="flex flex-col">
-                          <span>{session.user?.name}</span>
-                          <span className="text-xs font-normal text-muted-foreground truncate">{session.user?.email}</span>
-                          {profile && (
-                            <div className="mt-1.5 flex items-center gap-1.5 bg-primary/10 px-2 py-0.5 rounded-full w-fit border border-primary/20">
-                              <Package className="h-3 w-3 text-primary" />
-                              <span className="text-[10px] font-bold text-primary">৳{profile.walletBalance || 0} Tokens</span>
-                            </div>
-                          )}
+              <div className="hidden md:flex items-center">
+                {status === 'authenticated' && session?.user ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        className="flex items-center gap-2 px-2 py-1.5 rounded-xl transition-all cursor-pointer outline-none group hover:scale-110"
+                        aria-label="Account menu"
+                      >
+                        <div className="h-8 w-8 rounded-full border-2 border-primary/20 overflow-hidden group-hover:border-primary transition-all">
+                          <Image
+                            src={session.user?.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user?.name || 'U')}`}
+                            alt={session.user?.name || 'User'}
+                            width={32}
+                            height={32}
+                            className="h-full w-full object-cover"
+                          />
                         </div>
-                      </DropdownMenuLabel>
+                        <span className="hidden sm:block text-xs font-bold text-gray-700 group-hover:text-primary transition-colors">
+                          {session.user?.name?.split(' ')[0]}
+                        </span>
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56 mt-2">
+                      <DropdownMenuGroup>
+                        <DropdownMenuLabel className="font-serif">
+                          <div className="flex flex-col">
+                            <span>{session.user?.name}</span>
+                            <span className="text-xs font-normal text-muted-foreground truncate">{session.user?.email}</span>
+                            {profile && (
+                              <div className="mt-1.5 flex items-center gap-1.5 bg-primary/10 px-2 py-0.5 rounded-full w-fit border border-primary/20">
+                                <Package className="h-3 w-3 text-primary" />
+                                <span className="text-[10px] font-bold text-primary">৳{profile.walletBalance || 0} Tokens</span>
+                              </div>
+                            )}
+                          </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+
+                        {/* Role Based Navigation */}
+                        {(session.user as any)?.role === 'super_admin' && (
+                          <>
+                            <DropdownMenuItem asChild>
+                              <Link href="/admin/dashboard" className="cursor-pointer">
+                                <LayoutDashboard className="mr-2 h-4 w-4" /> Admin Dashboard
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link href="/admin/system-design" className="cursor-pointer">
+                                <Settings className="mr-2 h-4 w-4" /> Infrastructure & Marketing
+                              </Link>
+                            </DropdownMenuItem>
+                          </>
+                        )}
+
+                        {(session.user as any)?.role === 'admin' && (
+                          <>
+                            <DropdownMenuItem asChild>
+                              <Link href="/admin/dashboard" className="cursor-pointer">
+                                <LayoutDashboard className="mr-2 h-4 w-4" /> Admin Dashboard
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link href="/admin/orders" className="cursor-pointer">
+                                <Truck className="mr-2 h-4 w-4" /> Manage Orders
+                              </Link>
+                            </DropdownMenuItem>
+                          </>
+                        )}
+
+                        {(session.user as any)?.role === 'user' && (
+                          <>
+                            <DropdownMenuItem asChild>
+                              <Link href="/dashboard" className="cursor-pointer">
+                                <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link href="/track-order" className="cursor-pointer">
+                                <Truck className="mr-2 h-4 w-4" /> Track Order
+                              </Link>
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuGroup>
                       <DropdownMenuSeparator />
-
-                      {/* Role Based Navigation */}
-                      {(session.user as any)?.role === 'super_admin' && (
-                        <>
-                          <DropdownMenuItem asChild>
-                            <Link href="/admin/dashboard" className="cursor-pointer">
-                              <LayoutDashboard className="mr-2 h-4 w-4" /> Admin Dashboard
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link href="/admin/system-design" className="cursor-pointer">
-                              <Settings className="mr-2 h-4 w-4" /> Infrastructure & Marketing
-                            </Link>
-                          </DropdownMenuItem>
-                        </>
-                      )}
-
-                      {(session.user as any)?.role === 'admin' && (
-                        <>
-                          <DropdownMenuItem asChild>
-                            <Link href="/admin/dashboard" className="cursor-pointer">
-                              <LayoutDashboard className="mr-2 h-4 w-4" /> Admin Dashboard
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link href="/admin/orders" className="cursor-pointer">
-                              <Truck className="mr-2 h-4 w-4" /> Manage Orders
-                            </Link>
-                          </DropdownMenuItem>
-                        </>
-                      )}
-
-                      {(session.user as any)?.role === 'user' && (
-                        <>
-                          <DropdownMenuItem asChild>
-                            <Link href="/dashboard" className="cursor-pointer">
-                              <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link href="/track-order" className="cursor-pointer">
-                              <Truck className="mr-2 h-4 w-4" /> Track Order
-                            </Link>
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                    </DropdownMenuGroup>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => signOut({ callbackUrl: window.location.origin })} className="text-destructive cursor-pointer">
-                      <LogOut className="mr-2 h-4 w-4" /> Sign Out
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                <Link
-                  href="/login"
-                  className="h-10 w-10 flex items-center justify-center rounded-xl transition-all cursor-pointer hover:text-primary"
-                  aria-label="Log in"
-                >
-                  <User className="h-5 w-5" />
-                </Link>
-              )}
+                      <DropdownMenuItem onClick={() => signOut({ callbackUrl: window.location.origin })} className="text-destructive cursor-pointer">
+                        <LogOut className="mr-2 h-4 w-4" /> Sign Out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Link
+                    href="/login"
+                    className="h-10 w-10 flex items-center justify-center rounded-xl transition-all cursor-pointer hover:text-primary"
+                    aria-label="Log in"
+                  >
+                    <User className="h-5 w-5" />
+                  </Link>
+                )}
+              </div>
 
             </div>
           </div>

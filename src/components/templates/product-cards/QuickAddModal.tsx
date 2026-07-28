@@ -13,6 +13,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useAppDispatch } from '@/store/hooks';
 import { addToCart } from '@/store/slices/cartSlice';
 import { toast } from 'sonner';
+import Image from 'next/image';
 
 interface QuickAddModalProps {
   product: any;
@@ -113,9 +114,11 @@ export function QuickAddModal({ product, isOpen, onClose }: QuickAddModalProps) 
         
         <div className="flex gap-4 py-4 border-b">
           <div className="h-16 w-16 overflow-hidden rounded-md border flex-shrink-0">
-            <img 
+            <Image 
               src={activeVariant?.image || product.images?.[0] || '/placeholder.jpg'} 
               alt={product.name} 
+              width={64}
+              height={64}
               className="h-full w-full object-cover" 
             />
           </div>

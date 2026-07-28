@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { User, LogOut, LayoutDashboard, Truck, Settings, Package } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -48,15 +49,19 @@ export function MobileNavbar({ navItems, categories }: MobileNavbarProps) {
 
   return (
     <header className="lg:hidden sticky top-0 z-50 w-full bg-background border-b shadow-sm">
-      <div className="flex h-14 items-center justify-between px-3">
+      <div className="relative flex h-14 items-center justify-between px-3">
 
-        {/* Left: Mobile Menu Drawer Trigger & Logo */}
-        <div className="flex items-center gap-1 flex-1">
+        {/* Left: Mobile Menu Drawer Trigger */}
+        <div className="flex items-center">
           <MobileMenu
             navItems={navItems}
             categories={categories}
             session={session}
           />
+        </div>
+
+        {/* Center: Logo */}
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
           <Logo textClassName="text-base sm:text-lg whitespace-nowrap" />
         </div>
 
@@ -71,9 +76,11 @@ export function MobileNavbar({ navItems, categories }: MobileNavbarProps) {
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center cursor-pointer outline-none" aria-label="Account menu">
                   <div className="h-8 w-8 rounded-full border-2 border-primary/20 overflow-hidden hover:border-primary transition-all">
-                    <img
+                    <Image
                       src={session.user?.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user?.name || 'U')}`}
                       alt={session.user?.name || 'User'}
+                      width={32}
+                      height={32}
                       className="h-full w-full object-cover"
                     />
                   </div>

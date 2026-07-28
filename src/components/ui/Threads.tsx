@@ -143,32 +143,47 @@ const Threads = ({
     if (!containerRef.current) return;
     const container = containerRef.current;
 
-    const renderer = new Renderer({ alpha: true });
-    const gl = renderer.gl;
-    gl.clearColor(0, 0, 0, 0);
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    container.appendChild(gl.canvas);
+    let renderer: any;
+    let gl: any;
+    let program: any;
+    let geometry: any;
+    let mesh: any;
 
-    const geometry = new Triangle(gl);
-    const program = new Program(gl, {
-      vertex: vertexShader,
-      fragment: fragmentShader,
-      uniforms: {
-        iTime: { value: 0 },
-        iResolution: {
-          value: new Color(gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height),
+    try {
+      renderer = new Renderer({ alpha: true });
+      gl = renderer.gl;
+      if (!gl) {
+        throw new Error("WebGL context not available");
+      }
+      gl.clearColor(0, 0, 0, 0);
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      container.appendChild(gl.canvas);
+
+      geometry = new Triangle(gl);
+      program = new Program(gl, {
+        vertex: vertexShader,
+        fragment: fragmentShader,
+        uniforms: {
+          iTime: { value: 0 },
+          iResolution: {
+            value: new Color(gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height),
+          },
+          uColor: { value: new Color(...color) },
+          uAmplitude: { value: amplitude },
+          uDistance: { value: distance },
+          uMouse: { value: new Float32Array([0.5, 0.5]) },
         },
-        uColor: { value: new Color(...color) },
-        uAmplitude: { value: amplitude },
-        uDistance: { value: distance },
-        uMouse: { value: new Float32Array([0.5, 0.5]) },
-      },
-    });
+      });
 
-    const mesh = new Mesh(gl, { geometry, program });
+      mesh = new Mesh(gl, { geometry, program });
+    } catch (e) {
+      console.warn("WebGL initialization failed for Threads background:", e);
+      return;
+    }
 
     function resize() {
+      if (!renderer || !program) return;
       const { clientWidth, clientHeight } = container;
       renderer.setSize(clientWidth, clientHeight);
       program.uniforms.iResolution.value.r = clientWidth;
@@ -197,6 +212,7 @@ const Threads = ({
     }
 
     function update(t: number) {
+      if (!renderer || !mesh || !program) return;
       if (enableMouseInteraction) {
         const smoothing = 0.05;
         currentMouse[0] += smoothing * (targetMouse[0] - currentMouse[0]);
@@ -220,8 +236,12 @@ const Threads = ({
         container.removeEventListener('mousemove', handleMouseMove);
         container.removeEventListener('mouseleave', handleMouseLeave);
       }
-      if (container.contains(gl.canvas)) container.removeChild(gl.canvas);
-      gl.getExtension('WEBGL_lose_context')?.loseContext();
+      if (gl && gl.canvas && container.contains(gl.canvas)) {
+        container.removeChild(gl.canvas);
+      }
+      if (gl) {
+        gl.getExtension('WEBGL_lose_context')?.loseContext();
+      }
     };
   }, [color, amplitude, distance, enableMouseInteraction]);
 

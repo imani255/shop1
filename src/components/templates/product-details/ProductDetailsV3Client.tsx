@@ -34,8 +34,10 @@ export default function ProductDetailsV3Client({ product }: ProductDetailsV3Clie
   const isAdmin = (session?.user as any)?.role === 'admin';
 
   const [quantity, setQuantity] = useState(1);
-  const [selectedColor, setSelectedColor] = useState<string | null>(null);
-  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState(0);
+  const defaultVariant = product.variants && product.variants.length > 0 ? product.variants[0] : null;
+  const [selectedColor, setSelectedColor] = useState<string | null>(defaultVariant?.color || null);
+  const [selectedSize, setSelectedSize] = useState<string | null>(defaultVariant?.size || null);
 
   const uniqueColors = useMemo(() => 
     Array.from(new Set((product.variants || []).map((v: any) => v.color).filter(Boolean))) as any[],
@@ -75,9 +77,29 @@ export default function ProductDetailsV3Client({ product }: ProductDetailsV3Clie
     [product.variants, selectedColor, selectedSize]
   );
 
-  const displayPrice = activeVariant?.price || product.price;
-  const displaySalePrice = activeVariant?.salePrice || product.salePrice;
-  const displayStock = activeVariant?.stock ?? product.stock ?? 0;
+  const allImages = useMemo(() => {
+    if (activeVariant) {
+      const activeImages = [
+        ...(activeVariant.images || []),
+        activeVariant.image
+      ].filter(Boolean) as string[];
+      if (activeImages.length > 0) {
+        return Array.from(new Set(activeImages));
+      }
+    }
+    return product.images || [];
+  }, [product.images, activeVariant]);
+
+  useEffect(() => {
+    setSelectedImage(0);
+  }, [activeVariant]);
+
+  const hasVariants = (uniqueColors.length > 0 || uniqueSizes.length > 0);
+  const currentVariant = activeVariant || defaultVariant;
+
+  const displayPrice = hasVariants ? (currentVariant?.price ?? 0) : product.price;
+  const displaySalePrice = hasVariants ? currentVariant?.salePrice : product.salePrice;
+  const displayStock = hasVariants ? (currentVariant?.stock ?? 0) : (product.stock ?? 0);
 
   const handleAddToCart = () => {
     if (displayStock <= 0) return toast.error('Selection Unavailable');
@@ -87,7 +109,7 @@ export default function ProductDetailsV3Client({ product }: ProductDetailsV3Clie
       price: displaySalePrice || displayPrice,
       basePrice: displayPrice,
       quantity: quantity,
-      image: activeVariant?.image || product.images?.[0],
+      image: activeVariant?.image || (product.variants && product.variants.length > 0 ? product.variants[0]?.image : product.images?.[0]),
       color: selectedColor || undefined,
       size: selectedSize || undefined
     }));
@@ -152,12 +174,12 @@ export default function ProductDetailsV3Client({ product }: ProductDetailsV3Clie
           {/* Visual Architecture */}
           <div className="space-y-6">
              <div className="relative aspect-square rounded-[3rem] overflow-hidden bg-neutral-50 dark:bg-neutral-900 border-2 border-neutral-100 dark:border-neutral-800 group">
-                <Image 
-                  src={activeVariant?.image || product.images?.[0] || '/placeholder.png'} 
-                  alt={product.name} 
-                  fill 
-                  className="object-cover transition-transform duration-[2s] group-hover:scale-105"
-                />
+                 <Image 
+                   src={allImages[selectedImage] || '/placeholder.png'} 
+                   alt={product.name} 
+                   fill 
+                   className="object-cover transition-transform duration-[2s] group-hover:scale-105"
+                 />
                 
                 {isAdmin && (
                   <div className="absolute top-8 right-8 z-20">
@@ -188,8 +210,12 @@ export default function ProductDetailsV3Client({ product }: ProductDetailsV3Clie
              </div>
              
              <div className="grid grid-cols-4 gap-4">
-                {product.images?.map((img: string, i: number) => (
-                   <div key={i} className="relative aspect-square rounded-2xl overflow-hidden border-2 border-neutral-100 dark:border-neutral-800 hover:border-primary transition-all cursor-pointer">
+                {allImages?.map((img: string, i: number) => (
+                   <div 
+                     key={i} 
+                     onClick={() => setSelectedImage(i)}
+                     className={`relative aspect-square rounded-2xl overflow-hidden border-2 transition-all cursor-pointer ${selectedImage === i ? 'border-primary' : 'border-neutral-100 dark:border-neutral-800 hover:border-primary'}`}
+                   >
                       <Image src={img} alt={`${product.name} ${i}`} fill className="object-cover" />
                    </div>
                 ))}

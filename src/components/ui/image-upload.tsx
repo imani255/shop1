@@ -8,6 +8,7 @@ import { Upload, X, Loader2, Image as ImageIcon } from 'lucide-react';
 import { uploadToImgBB } from '@/lib/upload';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 interface ImageUploadProps {
   onUpload: (url: string) => void;
@@ -98,7 +99,7 @@ export function ImageUpload({ onUpload, value, label, className, iconClassName, 
                   !compact && aspect === "video" && "aspect-video",
                   !compact && aspect === "square" && "aspect-square max-w-[200px]"
                 )}>
-                  <img src={value} alt="Preview" className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                  <Image src={value} alt="Preview" fill unoptimized className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-700" />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
                       <div className="flex items-center gap-2">
                          <ImageIcon className={cn("text-white", compact ? "h-4 w-4" : "h-6 w-6")} />

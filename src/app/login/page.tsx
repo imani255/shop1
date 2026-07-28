@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { signIn, useSession } from 'next-auth/react';
@@ -46,10 +46,22 @@ export default function LoginPage() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Redirect if already authenticated based on role
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user) {
+      const role = (session.user as any)?.role;
+      if (role === 'admin' || role === 'super_admin') {
+        router.replace('/admin/dashboard');
+      } else {
+        router.replace('/dashboard');
+      }
+    }
+  }, [status, session, router]);
+
   async function loginWithGoogle() {
     setIsGoogleLoading(true);
     try {
-      await signIn('google', { callbackUrl: '/dashboard' });
+      await signIn('google', { callbackUrl: '/login' });
     } catch (error) {
       setIsGoogleLoading(false);
       toast.error('Failed to log in with Google.');
@@ -77,8 +89,7 @@ export default function LoginPage() {
         toast.error(response.error);
       } else {
         toast.success('Logged in successfully!');
-        router.push('/dashboard');
-        router.refresh();
+        window.location.href = '/dashboard';
       }
     } catch (error) {
       toast.error('Something went wrong. Please try again.');

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCachedSettings } from '@/lib/data-fetching';
+import connectToDatabase from '@/lib/db';
+import GlobalSettings from '@/models/GlobalSettings';
 import { headers } from 'next/headers';
 
 async function hashData(data: string): Promise<string> {
@@ -15,13 +16,15 @@ export async function POST(request: NextRequest) {
     try {
         const headersList = await headers();
         const hostname = headersList.get('host') || 'localhost';
-        const settings = await getCachedSettings();
+        
+        await connectToDatabase();
+        const settings = await GlobalSettings.findOne().sort({ updatedAt: -1 }).lean();
 
-        const pixelId = settings?.metaPixelId || process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID;
-        const accessToken = settings?.facebookAccessToken || process.env.FACEBOOK_ACCESS_TOKEN;
+        const pixelId = settings?.metaPixelId;
+        const accessToken = settings?.facebookAccessToken;
 
         if (!pixelId || !accessToken) {
-            console.error('[FB CAPI] Missing configuration for', hostname);
+            console.error('[FB CAPI] Missing configuration for', hostname, { hasPixelId: !!pixelId, hasAccessToken: !!accessToken });
             return NextResponse.json({ error: 'Missing Facebook config' }, { status: 500 });
         }
 
@@ -100,8 +103,8 @@ export async function POST(request: NextRequest) {
         };
 
         // Add test_event_code if present (useful for testing in Events Manager)
-        if (settings?.facebookTestEventCode || process.env.FACEBOOK_TEST_EVENT_CODE) {
-            payload.test_event_code = settings?.facebookTestEventCode || process.env.FACEBOOK_TEST_EVENT_CODE;
+        if (settings?.facebookTestEventCode) {
+            payload.test_event_code = settings.facebookTestEventCode;
         }
 
         const fbResponse = await fetch(

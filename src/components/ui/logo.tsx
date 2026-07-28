@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from 'react';
 import Link from 'next/link';
@@ -18,10 +18,10 @@ interface LogoProps {
 
 export function Logo({ className, imageClassName, textClassName, showText = true, onClick, sizes, src }: LogoProps) {
   const { brandName, logoUrl } = useSettings();
-  
+
   const finalBrandName = brandName || "Care Mom";
   const finalLogoUrl = src || logoUrl || "/logo.webp";
-  
+
   return (
     <Link href="/" className={cn("flex items-center gap-1.5 group", className)} onClick={onClick}>
       <div className={cn("relative flex items-center justify-center overflow-hidden transition-transform group-hover:scale-110 size-6 md:size-8 shrink-0", imageClassName)}>

@@ -25,11 +25,11 @@ export function WishlistHydrator({ children }: { children: React.ReactNode }) {
             dispatch(setWishlist(finalIds));
             dispatch(setWishlistHydrated());
           } else {
-            console.error('Failed to fetch wishlist');
+            console.warn('Could not fetch wishlist from API');
             dispatch(setWishlistHydrated());
           }
         } catch (error) {
-          console.error('Failed to fetch wishlist with server:', error);
+          console.warn('Failed to fetch wishlist from server:', error);
           dispatch(setWishlistHydrated());
         }
       };

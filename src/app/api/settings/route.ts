@@ -4,7 +4,6 @@ import connectToDatabase from '@/lib/db';
 import GlobalSettings from '@/models/GlobalSettings';
 import { auth } from '@/auth';
 
-
 // Helper to return settings without masking sensitive data or fallback to environment variables
 const getMaskedSettings = (raw: any, masked: any) => ({
   ...masked,
@@ -15,6 +14,7 @@ const getMaskedSettings = (raw: any, masked: any) => ({
     steadfast: masked.courierConfig.steadfast || null,
     pathao: masked.courierConfig.pathao || null,
     redx: masked.courierConfig.redx || null,
+    bdCourier: masked.courierConfig.bdCourier || null,
   } : masked.courierConfig,
   paymentConfig: masked.paymentConfig ? {
     ...masked.paymentConfig,
@@ -22,7 +22,7 @@ const getMaskedSettings = (raw: any, masked: any) => ({
   } : masked.paymentConfig,
   aiConfig: masked.aiConfig ? {
     ...masked.aiConfig,
-    openRouterApiKey: masked.aiConfig.openRouterApiKey || null,
+    geminiApiKey: masked.aiConfig.geminiApiKey || null,
   } : masked.aiConfig
 });
 
@@ -35,7 +35,7 @@ export async function GET() {
       return NextResponse.json({
         brandName: process.env.NEXT_PUBLIC_STORE_NAME || "Care Mom",
         contact: {
-          email: "support@caremombd.com",
+          email: "support@caremom.com",
           phone: "+8801234567890",
           address: "Dhaka, Bangladesh"
         },
@@ -61,6 +61,11 @@ export async function GET() {
           bodyFont: 'inter',
         }
       });
+    }
+
+    if (settings.contact?.email && settings.contact.email.includes(' ')) {
+      settings.contact.email = settings.contact.email.replace(/\s+/g, '').toLowerCase();
+      await settings.save({ validateBeforeSave: false });
     }
 
     const rawSettings = settings.toObject({ getters: false });

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCachedSettings } from '@/lib/data-fetching';
+import connectToDatabase from '@/lib/db';
+import GlobalSettings from '@/models/GlobalSettings';
 import { headers } from 'next/headers';
 
 async function hashData(data: string): Promise<string> {
@@ -15,14 +16,16 @@ export async function POST(request: NextRequest) {
     try {
         const headersList = await headers();
         const hostname = headersList.get('host') || 'localhost';
-        const settings = await getCachedSettings();
+        
+        await connectToDatabase();
+        const settings = await GlobalSettings.findOne().sort({ updatedAt: -1 }).lean();
 
-        const pixelId = settings?.tiktokPixelId || process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID;
-        const accessToken = settings?.tiktokAccessToken || process.env.TIKTOK_ACCESS_TOKEN;
+        const pixelId = settings?.tiktokPixelId;
+        const accessToken = settings?.tiktokAccessToken;
 
         if (!pixelId || !accessToken) {
-            console.warn('[TikTok API] Missing configuration for', hostname);
-            return NextResponse.json({ error: 'Missing TikTok config' }, { status: 500 });
+            // TikTok not configured — skip silently (not an error)
+            return NextResponse.json({ skipped: true, reason: 'TikTok not configured' }, { status: 200 });
         }
 
         const body = await request.json();
@@ -107,7 +110,7 @@ export async function POST(request: NextRequest) {
             console.error('[TikTok API] Error:', result);
             return NextResponse.json(
                 { error: 'Failed to send event to TikTok', details: result },
-                { status: response.status }
+                { status: 500 }
             );
         }
 

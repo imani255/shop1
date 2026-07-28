@@ -1,4 +1,4 @@
-import { headers } from 'next/headers';
+﻿import { headers } from 'next/headers';
 
 async function getBaseUrl() {
   const headersList = await headers();
@@ -31,7 +31,7 @@ export async function generateOrganizationSchema(settings: any) {
 export async function generateProductSchema(product: any) {
   const price = product.salePrice ?? product.price;
   const baseUrl = await getBaseUrl();
-  
+
   return {
     '@context': 'https://schema.org',
     '@type': 'Product',

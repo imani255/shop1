@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Pagination } from '@/components/ui/pagination';
 import {
   Table,
   TableBody,
@@ -27,8 +29,22 @@ import {
   ChevronDown,
   Printer,
   FileText,
-  Filter as FilterIcon
+  Filter as FilterIcon,
+  Copy,
+  Search
 } from 'lucide-react';
+
+const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    width="1em"
+    height="1em"
+    {...props}
+  >
+    <path d="M12.012 2c-5.506 0-9.989 4.478-9.99 9.984a9.96 9.96 0 001.37 5.054L2 22l5.132-1.347a9.937 9.937 0 004.877 1.28h.005c5.505 0 9.989-4.478 9.99-9.985A9.992 9.992 0 0012.012 2zm5.836 14.199c-.32.899-1.576 1.706-2.185 1.761-.559.05-1.286.074-2.074-.176a9.839 9.839 0 01-4.705-3.023 9.388 9.388 0 01-1.926-3.412 5.097 5.097 0 01-.137-2.138c.112-.601.442-1.01.691-1.272.249-.262.502-.328.67-.328.167 0 .335.006.475.014.148.009.347-.058.544.417.202.489.691 1.684.75 1.805.059.12.098.262.019.41-.079.158-.12.262-.24.399-.118.136-.251.306-.358.411-.118.114-.242.238-.104.475.138.238.614 1.01.32.957.382.341.703.56.963.666.26.106.41.088.56-.079.15-.167.643-.75.814-.999.171-.249.34-.208.573-.122.233.086 1.48.697 1.737.825.257.128.428.192.488.295.06.103.06.596-.26 1.495z"/>
+  </svg>
+);
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,22 +61,139 @@ import { generateInvoicePDF } from '@/lib/invoice-generator';
 import { printStickerInvoice } from '@/lib/sticker-generator';
 
 
-export default function OrdersPage() {
+const fraudCache: { [phone: string]: { success_ratio: number; total_parcel: number } | null } = {};
+const fraudPendingRequests: { [phone: string]: Promise<any> | null } = {};
+
+function FraudCheckBadge({ phone }: { phone?: string }) {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!phone) return;
+
+    if (fraudCache[phone] !== undefined) {
+      setData(fraudCache[phone]);
+      return;
+    }
+
+    const fetchFraud = async () => {
+      setLoading(true);
+      try {
+        let promise = fraudPendingRequests[phone];
+        if (!promise) {
+          promise = fetch(`/api/admin/courier/fraud-check?phone=${phone}`).then(res => {
+            if (res.ok) return res.json();
+            throw new Error('Failed');
+          });
+          fraudPendingRequests[phone] = promise;
+        }
+        
+        const json = await promise;
+        if (json?.status === 'success' && json?.data?.summary) {
+          const summary = json.data.summary;
+          fraudCache[phone] = {
+            success_ratio: summary.success_ratio,
+            total_parcel: summary.total_parcel
+          };
+        } else {
+          fraudCache[phone] = null;
+        }
+      } catch (e) {
+        fraudCache[phone] = null;
+      } finally {
+        setData(fraudCache[phone]);
+        setLoading(false);
+        delete fraudPendingRequests[phone];
+      }
+    };
+
+    fetchFraud();
+  }, [phone]);
+
+  if (loading) {
+    return <span className="text-[10px] text-muted-foreground ml-1.5 animate-pulse">Checking...</span>;
+  }
+
+  if (!data) return null;
+
+  const ratio = data.success_ratio;
+  const colorClass = ratio >= 80 ? 'text-green-600 font-extrabold' : ratio >= 60 ? 'text-yellow-600 font-extrabold' : 'text-red-600 font-extrabold';
+
+  return (
+    <span className={`text-[10px] px-1 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 ${colorClass}`} title={`${data.total_parcel} total parcels`}>
+      {ratio}% Success
+    </span>
+  );
+}
+
+function OrdersContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [currentPage, setCurrentPage] = useState(Math.max(1, parseInt(searchParams.get('page') || '1')));
+
   const [orders, setOrders] = useState<any[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [statusCounts, setStatusCounts] = useState<any>({
+    all: 0,
+    placed: 0,
+    confirmed: 0,
+    paid: 0,
+    ready: 0,
+    released: 0,
+    delivered: 0,
+    cancelled: 0
+  });
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchParams.get('search') || '');
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'All');
   const [dateFilter, setDateFilter] = useState({
-    from: '',
-    to: '',
+    from: searchParams.get('from') || '',
+    to: searchParams.get('to') || '',
   });
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-
+ 
   // Selection state
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [settings, setSettings] = useState<any>(null);
+ 
+  // Debounce search term
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setCurrentPage(1);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+ 
+  // Sync state to URL search parameters when filters change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (currentPage > 1) {
+      params.set('page', currentPage.toString());
+    }
+    if (statusFilter !== 'All') {
+      params.set('status', statusFilter);
+    }
+    if (debouncedSearchTerm) {
+      params.set('search', debouncedSearchTerm);
+    }
+    if (dateFilter.from) {
+      params.set('from', dateFilter.from);
+    }
+    if (dateFilter.to) {
+      params.set('to', dateFilter.to);
+    }
+
+    const currentQuery = searchParams.toString();
+    const newQuery = params.toString();
+    if (currentQuery !== newQuery) {
+      router.push(`/admin/orders?${newQuery}`);
+    }
+  }, [currentPage, statusFilter, debouncedSearchTerm, dateFilter.from, dateFilter.to]);
 
   const handleDownloadInvoice = async (order: any) => {
     try {
@@ -78,10 +211,7 @@ export default function OrdersPage() {
       return;
     }
     toast.info(`Generating ${toPrint.length > 1 ? toPrint.length + ' invoices' : 'invoice'}...`);
-    for (const order of toPrint) {
-      await generateInvoicePDF(order, settings, 'print');
-      if (toPrint.length > 1) await new Promise(r => setTimeout(r, 600));
-    }
+    await generateInvoicePDF(toPrint, settings, 'print');
   };
 
   const handlePrintStickers = async (ids: string[]) => {
@@ -91,20 +221,32 @@ export default function OrdersPage() {
       return;
     }
     toast.info('Preparing sticker invoice...');
-    // Open each sticker as a PDF in its own window - same pattern as invoice
-    for (const order of toPrint) {
-      await printStickerInvoice(order, settings);
-    }
+    await printStickerInvoice(toPrint, settings);
   };
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (pageVal = currentPage) => {
+    setLoading(true);
     try {
-      const res = await fetch('/api/orders?all=true');
+      const queryParams = new URLSearchParams({
+        all: 'true',
+        page: pageVal.toString(),
+        limit: '20',
+        search: debouncedSearchTerm,
+        status: statusFilter,
+        from: dateFilter.from,
+        to: dateFilter.to
+      });
+      const res = await fetch(`/api/orders?${queryParams.toString()}`);
       if (!res.ok) {
         throw new Error(`Failed to load orders: ${res.status} ${res.statusText}`);
       }
       const data = await res.json();
-      setOrders(data);
+      setOrders(data.orders || []);
+      setTotalPages(data.totalPages || 1);
+      setTotalCount(data.totalCount || 0);
+      if (data.counts) {
+        setStatusCounts(data.counts);
+      }
 
       // Also fetch settings for the invoice generator
       const settingsRes = await fetch('/api/settings');
@@ -119,35 +261,30 @@ export default function OrdersPage() {
   };
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    fetchOrders(currentPage);
+  }, [currentPage, debouncedSearchTerm, statusFilter, dateFilter.from, dateFilter.to]);
 
-  const filteredOrders = orders.filter((order) => {
-    const search = searchTerm.toLowerCase();
-
-    // 1. Search matching
-    const matchesSearch =
-      (order._id?.toLowerCase() || '').includes(search) ||
-      (order.user?.email?.toLowerCase() || '').includes(search) ||
-      (order.user?.name?.toLowerCase() || '').includes(search) ||
-      (order.shippingAddress?.fullName?.toLowerCase() || '').includes(search) ||
-      (order.shippingAddress?.phone?.toLowerCase() || '').includes(search);
-
-    // 2. Status matching
-    const matchesStatus = statusFilter === 'All' || order.status === statusFilter;
-
-    // 3. Date matching
-    let matchesDate = true;
-    if (dateFilter.from && dateFilter.to) {
-      const orderDate = new Date(order.createdAt);
-      const fromDate = new Date(dateFilter.from);
-      const toDate = new Date(dateFilter.to);
-      toDate.setHours(23, 59, 59, 999);
-      matchesDate = orderDate >= fromDate && orderDate <= toDate;
+  useEffect(() => {
+    const pageFromParams = Math.max(1, parseInt(searchParams.get('page') || '1'));
+    if (pageFromParams !== currentPage) {
+      setCurrentPage(pageFromParams);
     }
+    const statusFromParams = searchParams.get('status') || 'All';
+    if (statusFromParams !== statusFilter) {
+      setStatusFilter(statusFromParams);
+    }
+    const searchFromParams = searchParams.get('search') || '';
+    if (searchFromParams !== searchTerm) {
+      setSearchTerm(searchFromParams);
+    }
+    const fromFromParams = searchParams.get('from') || '';
+    const toFromParams = searchParams.get('to') || '';
+    if (fromFromParams !== dateFilter.from || toFromParams !== dateFilter.to) {
+      setDateFilter({ from: fromFromParams, to: toFromParams });
+    }
+  }, [searchParams]);
 
-    return matchesSearch && matchesStatus && matchesDate;
-  });
+  const filteredOrders = orders;
 
   const toggleSelectAll = () => {
     const filteredIds = filteredOrders.map(o => o._id);
@@ -446,22 +583,32 @@ export default function OrdersPage() {
 
   return (
     <div className="flex-1 space-y-4 px-0 py-4 md:p-8">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Order Management</h2>
-          <p className="text-muted-foreground text-sm">Review, fulfillment and track shop orders.</p>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex-shrink-0">
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight whitespace-nowrap">Order Management</h2>
+          <p className="text-muted-foreground text-xs md:text-sm hidden sm:block">Review, fulfillment and track shop orders.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+        <Button onClick={exportToCSV} className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold shrink-0">
+          <Download className="mr-2 h-4 w-4" /> Export
+        </Button>
+      </div>
+
+      {/* Search and Date Range Row (1 Row) */}
+      <div className="flex flex-wrap md:flex-nowrap items-center gap-2 w-full">
+        <div className="relative w-full md:w-80 shrink-0">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search name, phone, email or ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full md:w-72"
+            className="pl-8 w-full h-10"
           />
+        </div>
 
+        <div className="block md:hidden w-full sm:w-auto">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="h-10">
+              <Button variant="outline" className="h-10 w-full">
                 <FilterIcon className="mr-2 h-4 w-4" />
                 {statusFilter === 'All' ? 'All Status' : statusFilter}
                 <ChevronDown className="ml-2 h-3 w-3 opacity-50" />
@@ -472,27 +619,27 @@ export default function OrdersPage() {
                 <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {[
-                  'All',
-                  'Order Placed',
-                  'Confirmed',
-                  'Paid',
-                  'Ready for Delivery',
-                  'Released for Delivery',
-                  'Delivered',
-                  'Cancelled'
+                  { label: 'All', value: 'All', count: statusCounts.all },
+                  { label: 'Placed', value: 'Order Placed', count: statusCounts.placed },
+                  { label: 'Confirmed', value: 'Confirmed', count: statusCounts.confirmed },
+                  { label: 'Paid', value: 'Paid', count: statusCounts.paid },
+                  { label: 'Ready', value: 'Ready for Delivery', count: statusCounts.ready },
+                  { label: 'Released', value: 'Released for Delivery', count: statusCounts.released },
+                  { label: 'Delivered', value: 'Delivered', count: statusCounts.delivered },
+                  { label: 'Cancelled', value: 'Cancelled', count: statusCounts.cancelled }
                 ].map((status) => (
                   <DropdownMenuItem
-                    key={status}
-                    onClick={() => setStatusFilter(status)}
-                    className={statusFilter === status ? "bg-accent font-bold" : ""}
+                    key={status.value}
+                    onClick={() => {
+                      setStatusFilter(status.value);
+                      setCurrentPage(1);
+                    }}
+                    className={statusFilter === status.value ? "bg-accent font-bold" : ""}
                   >
-                    <div className="flex items-center justify-between w-full">
-                      <span>{status}</span>
-                      <Badge variant="secondary" className="ml-2 text-[10px] px-1.5 py-0">
-                        {status === 'All'
-                          ? orders.length
-                          : orders.filter(o => o.status === status).length
-                        }
+                    <div className="flex items-center justify-between w-full text-xs">
+                      <span>{status.label}</span>
+                      <Badge variant="secondary" className="ml-2 text-[9px] px-1.5 py-0">
+                        {status.count ?? 0}
                       </Badge>
                     </div>
                   </DropdownMenuItem>
@@ -500,40 +647,85 @@ export default function OrdersPage() {
               </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
-
-          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-md border">
-            <Input
-              type="date"
-              className="h-8 w-36 border-none bg-transparent focus-visible:ring-0"
-              value={dateFilter.from}
-              onChange={(e) => setDateFilter(prev => ({ ...prev, from: e.target.value }))}
-            />
-            <span className="text-muted-foreground text-xs">to</span>
-            <Input
-              type="date"
-              className="h-8 w-36 border-none bg-transparent focus-visible:ring-0"
-              value={dateFilter.to}
-              onChange={(e) => setDateFilter(prev => ({ ...prev, to: e.target.value }))}
-            />
-          </div>
-          <Button variant="outline" onClick={exportToCSV}>
-            <Download className="mr-2 h-4 w-4" /> Export
-          </Button>
-          {(statusFilter !== 'All' || dateFilter.from || dateFilter.to || searchTerm) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setStatusFilter('All');
-                setDateFilter({ from: '', to: '' });
-                setSearchTerm('');
-              }}
-              className="text-xs text-muted-foreground hover:text-primary"
-            >
-              Clear All
-            </Button>
-          )}
         </div>
+
+        <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-md border w-full md:w-auto h-10">
+          <Input
+            type="date"
+            className="h-8 w-full md:w-36 border-none bg-transparent focus-visible:ring-0"
+            value={dateFilter.from}
+            onChange={(e) => {
+              setDateFilter(prev => ({ ...prev, from: e.target.value }));
+              setCurrentPage(1);
+            }}
+          />
+          <span className="text-muted-foreground text-xs">to</span>
+          <Input
+            type="date"
+            className="h-8 w-full md:w-36 border-none bg-transparent focus-visible:ring-0"
+            value={dateFilter.to}
+            onChange={(e) => {
+              setDateFilter(prev => ({ ...prev, to: e.target.value }));
+              setCurrentPage(1);
+            }}
+          />
+        </div>
+
+        {(statusFilter !== 'All' || dateFilter.from || dateFilter.to || searchTerm) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setStatusFilter('All');
+              setDateFilter({ from: '', to: '' });
+              setSearchTerm('');
+              setCurrentPage(1);
+            }}
+            className="text-xs text-muted-foreground hover:text-primary shrink-0"
+          >
+            Clear All
+          </Button>
+        )}
+      </div>
+
+      {/* Status Tabs Row (Desktop only - Full Width Grid) */}
+      <div className="hidden md:grid md:grid-cols-8 gap-2 pb-2 border-b">
+        {[
+          { label: 'All', value: 'All', count: statusCounts.all },
+          { label: 'Placed', value: 'Order Placed', count: statusCounts.placed },
+          { label: 'Confirmed', value: 'Confirmed', count: statusCounts.confirmed },
+          { label: 'Paid', value: 'Paid', count: statusCounts.paid },
+          { label: 'Ready', value: 'Ready for Delivery', count: statusCounts.ready },
+          { label: 'Released', value: 'Released for Delivery', count: statusCounts.released },
+          { label: 'Delivered', value: 'Delivered', count: statusCounts.delivered },
+          { label: 'Cancelled', value: 'Cancelled', count: statusCounts.cancelled }
+        ].map((status) => {
+          const isActive = statusFilter === status.value;
+          return (
+            <button
+              key={status.value}
+              onClick={() => {
+                setStatusFilter(status.value);
+                setCurrentPage(1);
+              }}
+              className={`w-full py-2 text-xs font-semibold rounded-md transition-all duration-200 text-center truncate flex items-center justify-center gap-1.5 ${
+                isActive
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-background hover:bg-muted text-muted-foreground border border-input'
+              }`}
+              title={`${status.label} (${status.count ?? 0})`}
+            >
+              <span>{status.label}</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                isActive 
+                  ? 'bg-white/20 text-white' 
+                  : 'bg-muted text-muted-foreground border'
+              }`}>
+                {status.count ?? 0}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="rounded-md border bg-background overflow-hidden relative">
@@ -621,7 +813,7 @@ export default function OrdersPage() {
                 />
               </TableHead>
               <TableHead>Order Info</TableHead>
-              <TableHead>Customer</TableHead>
+              <TableHead>Items</TableHead>
               <TableHead>Total</TableHead>
               <TableHead>Payment</TableHead>
               <TableHead>Status</TableHead>
@@ -644,18 +836,73 @@ export default function OrdersPage() {
                       onCheckedChange={() => toggleSelect(order._id)}
                     />
                   </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1">
-                      <button
-                        type="button"
-                        className="flex flex-col cursor-pointer text-left hover:opacity-80 transition-opacity"
-                        onClick={() => openDetails(order._id)}
-                      >
-                        <span className="font-bold text-primary hover:underline">#{order._id.slice(-8).toUpperCase()}</span>
-                        <span className="text-[10px] text-muted-foreground uppercase">
+                  <TableCell className="max-w-[200px] whitespace-normal">
+                    <div className="flex flex-col gap-1.5 text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          className="cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => openDetails(order._id)}
+                        >
+                          <span className={`font-bold hover:underline ${order.isDuplicate ? 'text-red-500 font-extrabold' : order.isRepeat ? 'text-yellow-600 font-extrabold' : 'text-primary'}`}>
+                            #{order._id.slice(-8).toUpperCase()}
+                          </span>
+                        </button>
+                        {order.isDuplicate ? (
+                          <Badge className="bg-red-500 text-white hover:bg-red-600 border-none text-[9px] px-1 py-0 h-4">Duplicate</Badge>
+                        ) : order.isRepeat ? (
+                          <Badge className="bg-yellow-500 text-black hover:bg-yellow-600 border-none text-[9px] px-1 py-0 h-4">Repeat</Badge>
+                        ) : null}
+                      </div>
+                      
+                      <div className="flex flex-col text-[11px] text-slate-700 dark:text-zinc-300 mt-1 space-y-0.5">
+                        <span className="font-semibold text-slate-900 dark:text-white break-words block">{order.shippingAddress?.fullName || order.user?.name || 'Guest User'}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span 
+                            onClick={() => order.shippingAddress?.phone && setSearchTerm(order.shippingAddress.phone)}
+                            className="text-muted-foreground hover:text-primary cursor-pointer hover:underline font-medium"
+                          >
+                            {order.shippingAddress?.phone || 'No Phone'}
+                          </span>
+                          {order.shippingAddress?.phone && (
+                            <>
+                              <a 
+                                href={`https://wa.me/${order.shippingAddress.phone.replace(/[^0-9]/g, '').startsWith('88') ? order.shippingAddress.phone.replace(/[^0-9]/g, '') : '88' + (order.shippingAddress.phone.replace(/[^0-9]/g, '').startsWith('0') ? order.shippingAddress.phone.replace(/[^0-9]/g, '').slice(1) : order.shippingAddress.phone.replace(/[^0-9]/g, ''))}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-green-600 hover:text-green-700 transition-colors p-0.5 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded"
+                                title="Chat on WhatsApp"
+                              >
+                                <WhatsAppIcon className="h-3.5 w-3.5" />
+                              </a>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(order.shippingAddress.phone);
+                                  toast.success('Phone number copied!');
+                                }}
+                                className="text-muted-foreground hover:text-primary transition-colors p-0.5 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded animate-in fade-in duration-200"
+                                title="Copy Phone Number"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                        {order.shippingAddress?.phone && (
+                          <div className="mt-0.5">
+                            <FraudCheckBadge phone={order.shippingAddress.phone} />
+                          </div>
+                        )}
+                        <span className="text-muted-foreground truncate max-w-[150px]">{order.user?.email || 'No Email'}</span>
+                        <span className="text-[10px] text-muted-foreground uppercase mt-0.5">
                           {order.createdAt ? format(new Date(order.createdAt), 'MMM dd, p') : 'N/A'}
                         </span>
-                      </button>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1.5">
                       <div className="flex flex-wrap gap-1 max-w-[200px]">
                         {order.items?.map((item: any, idx: number) => (
                           <Badge key={idx} variant="outline" className="text-[9px] px-1 py-0 font-normal truncate max-w-[180px]">
@@ -668,12 +915,11 @@ export default function OrdersPage() {
                           </Badge>
                         ))}
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col text-xs">
-                      <span className="font-semibold">{order.user?.name || 'Guest User'}</span>
-                      <span className="text-muted-foreground truncate max-w-[150px]">{order.user?.email || 'N/A'}</span>
+                      {order.internalNote && (
+                        <div className="mt-1 text-[10px] bg-yellow-50 dark:bg-yellow-950/20 text-amber-800 dark:text-amber-300 px-1.5 py-0.5 rounded border border-yellow-200/50 font-medium whitespace-pre-line max-w-[200px]" title={order.internalNote}>
+                          Note: {order.internalNote}
+                        </div>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="font-bold">৳{Math.round(order.totalAmount ?? 0)}</TableCell>
@@ -788,6 +1034,21 @@ export default function OrdersPage() {
             )}
           </TableBody>
         </Table>
+        {totalPages > 1 && (
+          <div className="py-6 border-t bg-white px-6">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={(page) => {
+                setCurrentPage(page);
+                fetchOrders(page);
+                const params = new URLSearchParams(searchParams.toString());
+                params.set('page', page.toString());
+                router.push(`?${params.toString()}`);
+              }}
+            />
+          </div>
+        )}
       </div>
 
       <OrderDetailsDialog
@@ -810,3 +1071,14 @@ export default function OrdersPage() {
   );
 }
 
+export default function OrdersPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-[300px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    }>
+      <OrdersContent />
+    </Suspense>
+  );
+}

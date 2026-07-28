@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
@@ -245,61 +245,61 @@ export default function SettingsPage() {
                   rewardPercentage: result.data.subscriptionConfig?.rewardPercentage ?? 5,
                 },
                 logoUrl: result.data.logoUrl || '',
-                  uiTemplates: {
-                    theme: result.data.uiTemplates?.theme || 'green',
-                    logoFont: result.data.uiTemplates?.logoFont || 'orbitron',
-                    bodyFont: result.data.uiTemplates?.bodyFont || 'inter',
-                    layout: result.data.uiTemplates?.layout || 'v1',
+                uiTemplates: {
+                  theme: result.data.uiTemplates?.theme || 'green',
+                  logoFont: result.data.uiTemplates?.logoFont || 'orbitron',
+                  bodyFont: result.data.uiTemplates?.bodyFont || 'inter',
+                  layout: result.data.uiTemplates?.layout || 'v1',
+                },
+                paymentConfig: {
+                  activeMethod: result.data.paymentConfig?.activeMethod || 'none',
+                  sslcommerz: {
+                    storeId: result.data.paymentConfig?.sslcommerz?.storeId || '',
+                    storePassword: result.data.paymentConfig?.sslcommerz?.storePassword || '',
+                    isSandbox: result.data.paymentConfig?.sslcommerz?.isSandbox ?? true,
                   },
-                  paymentConfig: {
-                    activeMethod: result.data.paymentConfig?.activeMethod || 'none',
-                    sslcommerz: {
-                      storeId: result.data.paymentConfig?.sslcommerz?.storeId || '',
-                      storePassword: result.data.paymentConfig?.sslcommerz?.storePassword || '',
-                      isSandbox: result.data.paymentConfig?.sslcommerz?.isSandbox ?? true,
-                    },
+                },
+                manualPaymentConfig: {
+                  bkash: {
+                    number: result.data.manualPaymentConfig?.bkash?.number || '',
+                    qrCode: result.data.manualPaymentConfig?.bkash?.qrCode || '',
+                    active: result.data.manualPaymentConfig?.bkash?.active ?? false,
                   },
-                  manualPaymentConfig: {
-                    bkash: {
-                      number: result.data.manualPaymentConfig?.bkash?.number || '',
-                      qrCode: result.data.manualPaymentConfig?.bkash?.qrCode || '',
-                      active: result.data.manualPaymentConfig?.bkash?.active ?? false,
-                    },
-                    nagad: {
-                      number: result.data.manualPaymentConfig?.nagad?.number || '',
-                      qrCode: result.data.manualPaymentConfig?.nagad?.qrCode || '',
-                      active: result.data.manualPaymentConfig?.nagad?.active ?? false,
-                    },
-                    rocket: {
-                      number: result.data.manualPaymentConfig?.rocket?.number || '',
-                      qrCode: result.data.manualPaymentConfig?.rocket?.qrCode || '',
-                      active: result.data.manualPaymentConfig?.rocket?.active ?? false,
-                    },
-                    banglaQr: {
-                      qrCode: result.data.manualPaymentConfig?.banglaQr?.qrCode || '',
-                      active: result.data.manualPaymentConfig?.banglaQr?.active ?? false,
-                    },
-                    instructions: result.data.manualPaymentConfig?.instructions || '',
+                  nagad: {
+                    number: result.data.manualPaymentConfig?.nagad?.number || '',
+                    qrCode: result.data.manualPaymentConfig?.nagad?.qrCode || '',
+                    active: result.data.manualPaymentConfig?.nagad?.active ?? false,
                   },
-                  courierConfig: {
-                    activeProvider: result.data.courierConfig?.activeProvider || 'none',
-                    steadfast: {
-                      apiKey: result.data.courierConfig?.steadfast?.apiKey || '',
-                      secretKey: result.data.courierConfig?.steadfast?.secretKey || '',
-                    },
-                    pathao: {
-                      clientId: result.data.courierConfig?.pathao?.clientId || '',
-                      clientSecret: result.data.courierConfig?.pathao?.clientSecret || '',
-                      storeId: result.data.courierConfig?.pathao?.storeId || '',
-                    },
-                    redx: {
-                      apiKey: result.data.courierConfig?.redx?.apiKey || '',
-                    },
+                  rocket: {
+                    number: result.data.manualPaymentConfig?.rocket?.number || '',
+                    qrCode: result.data.manualPaymentConfig?.rocket?.qrCode || '',
+                    active: result.data.manualPaymentConfig?.rocket?.active ?? false,
                   },
-                  facebookDomainVerification: result.data.facebookDomainVerification || '',
-                  metaPixelId: result.data.metaPixelId || '',
-                  facebookAccessToken: result.data.facebookAccessToken || '',
-                  facebookTestEventCode: result.data.facebookTestEventCode || '',
+                  banglaQr: {
+                    qrCode: result.data.manualPaymentConfig?.banglaQr?.qrCode || '',
+                    active: result.data.manualPaymentConfig?.banglaQr?.active ?? false,
+                  },
+                  instructions: result.data.manualPaymentConfig?.instructions || '',
+                },
+                courierConfig: {
+                  activeProvider: result.data.courierConfig?.activeProvider || 'none',
+                  steadfast: {
+                    apiKey: result.data.courierConfig?.steadfast?.apiKey || '',
+                    secretKey: result.data.courierConfig?.steadfast?.secretKey || '',
+                  },
+                  pathao: {
+                    clientId: result.data.courierConfig?.pathao?.clientId || '',
+                    clientSecret: result.data.courierConfig?.pathao?.clientSecret || '',
+                    storeId: result.data.courierConfig?.pathao?.storeId || '',
+                  },
+                  redx: {
+                    apiKey: result.data.courierConfig?.redx?.apiKey || '',
+                  },
+                },
+                facebookDomainVerification: result.data.facebookDomainVerification || '',
+                metaPixelId: result.data.metaPixelId || '',
+                facebookAccessToken: result.data.facebookAccessToken || '',
+                facebookTestEventCode: result.data.facebookTestEventCode || '',
               };
               form.reset(sanitizedData);
             }
@@ -407,9 +407,9 @@ export default function SettingsPage() {
                       <FormItem>
                         <FormLabel className="text-sm font-semibold text-gray-700">Store Logo</FormLabel>
                         <FormControl>
-                          <ImageUpload 
+                          <ImageUpload
                             value={field.value}
-                            onUpload={(url) => field.onChange(url)} 
+                            onUpload={(url) => field.onChange(url)}
                             className="bg-white border-2 border-gray-100"
                             aspect="square"
                           />
@@ -756,7 +756,7 @@ export default function SettingsPage() {
 
                   <div className="mt-8 p-6 rounded-3xl bg-muted/30 border-2 border-dashed border-muted flex flex-col items-center justify-center text-center space-y-4">
                     <div className="h-12 w-12 rounded-full bg-background flex items-center justify-center">
-                       <Truck className="h-6 w-6 text-muted-foreground" />
+                      <Truck className="h-6 w-6 text-muted-foreground" />
                     </div>
                     <div>
                       <h4 className="font-bold">Live Preview (Coming Soon)</h4>

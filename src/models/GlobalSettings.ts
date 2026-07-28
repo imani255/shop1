@@ -45,6 +45,9 @@ export interface IGlobalSettings extends Document {
     redx?: {
       apiKey?: string;
     };
+    bdCourier?: {
+      apiKey?: string;
+    };
   };
   subscriptionConfig?: {
     activationThreshold?: number;
@@ -70,8 +73,7 @@ export interface IGlobalSettings extends Document {
   googleSearchConsoleId?: string; // Search Console Site URL (e.g. https://www.example.com/ or sc-domain:example.com)
   superAdminNote?: string;
   aiConfig?: {
-    openRouterApiKey?: string;
-    systemPrompt?: string;
+    geminiApiKey?: string;
   };
   uiTemplates?: {
     layout?: string;
@@ -125,10 +127,10 @@ const GlobalSettingsSchema: Schema<IGlobalSettings> = new Schema(
     searchConsoleMeta: { type: String },
     facebookDomainVerification: { type: String },
     metaPixelId: { type: String },
-    facebookAccessToken: { type: String, get: decrypt, set: encrypt },
+    facebookAccessToken: { type: String },
     facebookTestEventCode: { type: String },
     tiktokPixelId: { type: String },
-    tiktokAccessToken: { type: String, get: decrypt, set: encrypt },
+    tiktokAccessToken: { type: String },
     courierConfig: { type: Object, default: { activeProvider: 'none' } },
     subscriptionConfig: { type: Object, default: { activationThreshold: 5000, rewardPercentage: 5 } },
     paymentConfig: { type: Object, default: { activeMethod: 'none' } },
@@ -138,8 +140,7 @@ const GlobalSettingsSchema: Schema<IGlobalSettings> = new Schema(
     googleSearchConsoleId: { type: String },
     superAdminNote: { type: String },
     aiConfig: {
-      openRouterApiKey: { type: String, get: decrypt, set: encrypt },
-      systemPrompt: { type: String, default: 'You are a helpful e-commerce assistant.' }
+      geminiApiKey: { type: String }
     },
     uiTemplates: { type: Object, default: {} },
     saasSubscription: {
@@ -177,13 +178,6 @@ const GlobalSettingsSchema: Schema<IGlobalSettings> = new Schema(
         if (ret.paymentConfig) {
           delete ret.paymentConfig.sslcommerz;
         }
-        // Security: Remove sensitive AI API Key
-        if (ret.aiConfig) {
-          delete ret.aiConfig.openRouterApiKey;
-        }
-        // Security: Remove sensitive Facebook Access Token
-        delete ret.facebookAccessToken;
-        delete ret.tiktokAccessToken;
         return ret;
       }
     },

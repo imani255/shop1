@@ -13,15 +13,29 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
+    const { searchParams } = new URL(req.url);
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
+    const limit = Math.max(1, parseInt(searchParams.get('limit') || '20'));
+    const search = searchParams.get('search') || '';
+
     await connectToDatabase();
 
-    // Aggregate users with their order stats
+    const matchQuery: any = { role: { $ne: 'super_admin' as const } };
+    if (search) {
+      matchQuery.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } }
+      ];
+    }
+    const totalCount = await User.countDocuments(matchQuery);
+
+    // Aggregate users with their order stats (efficiently skip/limit before lookup)
     const users = await User.aggregate([
-      { 
-        $match: { 
-          role: { $ne: 'super_admin' } // Hide super admins
-        } 
-      },
+      { $match: matchQuery },
+      { $sort: { createdAt: -1 } },
+      { $skip: (page - 1) * limit },
+      { $limit: limit },
       {
         $lookup: {
           from: 'orders',
@@ -44,11 +58,15 @@ export async function GET(req: NextRequest) {
           totalSpent: { $sum: '$userOrders.totalAmount' },
           lastOrderDate: { $max: '$userOrders.createdAt' }
         }
-      },
-      { $sort: { createdAt: -1 } }
+      }
     ]);
 
-    return NextResponse.json(users);
+    return NextResponse.json({
+      users,
+      totalCount,
+      page,
+      totalPages: Math.ceil(totalCount / limit),
+    });
   } catch (error) {
     console.error('Fetch Users Error:', error);
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
@@ -60,8 +78,8 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     const currentUserRole = (session?.user as any)?.role;
     
-    // Only super_admin can manually assign admins by email
-    if (!session || currentUserRole !== 'super_admin') {
+    // Both admin and super_admin can manually assign admins by email
+    if (!session || (currentUserRole !== 'super_admin' && currentUserRole !== 'admin')) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -108,7 +126,7 @@ export async function PATCH(req: NextRequest) {
 
     const { userId, role } = await req.json();
 
-    if (!userId || !['user', 'admin'].includes(role)) {
+    if (!userId || !['user', 'admin', 'manager'].includes(role)) {
       return NextResponse.json({ message: 'Invalid data' }, { status: 400 });
     }
 

@@ -42,7 +42,7 @@ export default function FacebookPixel({
   }, [pathname, searchParams, trackPageView, pixelId, mounted, scriptLoaded]);
 
   // Sanitize pixelId to prevent XSS
-  const sanitizedPixelId = pixelId && /^\d+$/.test(pixelId) ? pixelId : null;
+  const sanitizedPixelId = pixelId && /^\d+$/.test(pixelId.trim()) ? pixelId.trim() : null;
 
   if (!sanitizedPixelId) {
     return null;
@@ -64,6 +64,7 @@ export default function FacebookPixel({
             t.src=v;s=b.getElementsByTagName(e)[0];
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
+            fbq('dataProcessingOptions', []);
             fbq('init', '${sanitizedPixelId}');
           `,
         }}

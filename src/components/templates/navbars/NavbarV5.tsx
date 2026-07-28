@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Search, ShoppingBag, User, Heart, Menu, X, LogOut, LayoutDashboard, Settings, Truck, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,7 +21,6 @@ import {
   DropdownMenuGroup,
 } from '@/components/ui/dropdown-menu';
 import { MobileMenu } from '@/components/layout/MobileMenu';
-import { useEffect } from 'react';
 import { useSettings } from '@/components/SettingsProvider';
 import { MobileNavbar } from '@/components/layout/MobileNavbar';
 
@@ -31,6 +31,14 @@ export default function NavbarV5() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
   const [profile, setProfile] = useState<any>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [liveResults, setLiveResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cartItemsCount = useAppSelector((state) => state.cart.items.reduce((total, item) => total + item.quantity, 0));
   const wishlistCount = useAppSelector((state) => state.wishlist.items.length);
 
@@ -52,10 +60,45 @@ export default function NavbarV5() {
     }
   }, [session]);
 
+  // Live search debounce
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const trimmed = searchTerm.trim();
+    if (!trimmed) { setLiveResults([]); setShowDropdown(false); return; }
+    debounceRef.current = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const res = await fetch(`/api/products?search=${encodeURIComponent(trimmed)}&limit=6`);
+        if (res.ok) { const data = await res.json(); setLiveResults(data.products || []); setShowDropdown(true); }
+      } catch { /* silent */ } finally { setIsSearching(false); }
+    }, 400);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [searchTerm]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setShowDropdown(false); setSearchOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      router.push(`/shop?search=${encodeURIComponent(searchTerm.trim())}`);
+      setSearchTerm(''); setShowDropdown(false); setSearchOpen(false); setLiveResults([]);
+    }
+  };
+  const handleResultClick = () => { setShowDropdown(false); setSearchTerm(''); setLiveResults([]); setSearchOpen(false); };
+
 
   const NAV_LINKS = [
     { label: 'Discovery', href: '/shop' },
     { label: 'Atelier', href: '/categories' },
+    { label: 'Factory Profile', href: '/factory-profile' },
     { label: 'Journal', href: '/blog' }
   ];
 
@@ -93,13 +136,80 @@ export default function NavbarV5() {
 
           {/* Actions - Artistic Group */}
           <div className="flex items-center gap-6">
-            <button 
-              onClick={() => router.push('/shop')}
-              className="h-12 w-12 rounded-2xl bg-transparent flex items-center justify-center hover:text-primary hover:scale-110 transition-all outline-none"
-              aria-label="Discovery Search"
-            >
-              <Search className="h-5 w-5" />
-            </button>
+            {/* Expandable Search */}
+            <div ref={searchContainerRef} className="relative flex items-center">
+              {searchOpen ? (
+                <form onSubmit={handleSearch} className="flex items-center gap-2">
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Search..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    autoComplete="off"
+                    autoFocus
+                    className="w-44 border-b border-foreground/20 focus:border-primary outline-none py-1 text-sm bg-transparent transition-all"
+                  />
+                  <button type="button" onClick={() => { setSearchOpen(false); setSearchTerm(''); setShowDropdown(false); setLiveResults([]); }} className="hover:text-primary transition-all">
+                    <X className="h-4 w-4" />
+                  </button>
+                </form>
+              ) : (
+                <button
+                  onClick={() => { setSearchOpen(true); setTimeout(() => searchInputRef.current?.focus(), 50); }}
+                  className="h-12 w-12 rounded-2xl bg-transparent flex items-center justify-center hover:text-primary hover:scale-110 transition-all outline-none"
+                  aria-label="Discovery Search"
+                >
+                  <Search className="h-5 w-5" />
+                </button>
+              )}
+              {showDropdown && (
+                <div className="absolute top-full left-0 mt-3 w-72 bg-background border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
+                  {isSearching ? (
+                    <div className="flex items-center justify-center py-6 gap-2 text-muted-foreground text-xs">
+                      <div className="h-3 w-3 rounded-full border-2 border-primary border-t-transparent animate-spin" /> Searching...
+                    </div>
+                  ) : liveResults.length > 0 ? (
+                    <>
+                      <ul className="divide-y divide-border/50">
+                        {liveResults.map((product) => {
+                          const price = product.salePrice ?? product.price;
+                          const image = product.images?.[0];
+                          return (
+                            <li key={product._id}>
+                              <Link href={`/products/${product.slug}`} onClick={handleResultClick} className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/50 transition-colors group">
+                                {image ? (
+                                  <div className="h-10 w-10 rounded-lg overflow-hidden flex-shrink-0 bg-muted">
+                                    <Image src={image} alt={product.name} width={40} height={40} className="h-full w-full object-cover" />
+                                  </div>
+                                ) : (
+                                  <div className="h-10 w-10 rounded-lg bg-muted flex-shrink-0 flex items-center justify-center">
+                                    <Search className="h-4 w-4 text-muted-foreground" />
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-semibold truncate group-hover:text-primary transition-colors">{product.name}</p>
+                                  <p className="text-[11px] text-primary font-bold">৳{price?.toLocaleString()}</p>
+                                </div>
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      <div className="border-t border-border/50 px-4 py-2.5">
+                        <Link href={`/shop?search=${encodeURIComponent(searchTerm.trim())}`} onClick={handleResultClick} className="flex items-center justify-center gap-1.5 text-xs font-semibold text-primary hover:underline">
+                          <Search className="h-3 w-3" /> See all results for &ldquo;{searchTerm}&rdquo;
+                        </Link>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center py-6 text-muted-foreground text-xs gap-1">
+                      <Search className="h-5 w-5 mb-1 opacity-40" /> No results found for &ldquo;{searchTerm}&rdquo;
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             <Link 
                href="/dashboard/wishlist" 
@@ -120,19 +230,21 @@ export default function NavbarV5() {
                )}
             </Link>
 
-            <CartDrawer>
-              <div 
-                 className="relative group h-14 w-14 rounded-[2rem] bg-transparent text-foreground flex items-center justify-center hover:scale-110 hover:text-primary transition-all cursor-pointer"
-                 aria-label={`Shopping Cart (${cartItemsCount})`}
-              >
-                 <ShoppingBag className="h-6 w-6" />
-                 {cartItemsCount > 0 && (
-                   <span className="absolute -top-1 -right-1 h-6 w-6 bg-white text-black text-[10px] font-black rounded-full flex items-center justify-center shadow-lg border-2 border-primary animate-in zoom-in">
-                     {cartItemsCount}
-                   </span>
-                 )}
-              </div>
-            </CartDrawer>
+            <div className="hidden md:block">
+              <CartDrawer>
+                <div 
+                   className="relative group h-14 w-14 rounded-[2rem] bg-transparent text-foreground flex items-center justify-center hover:scale-110 hover:text-primary transition-all cursor-pointer"
+                   aria-label={`Shopping Cart (${cartItemsCount})`}
+                >
+                   <ShoppingBag className="h-6 w-6" />
+                   {cartItemsCount > 0 && (
+                     <span className="absolute -top-1 -right-1 h-6 w-6 bg-white text-black text-[10px] font-black rounded-full flex items-center justify-center shadow-lg border-2 border-primary animate-in zoom-in">
+                       {cartItemsCount}
+                     </span>
+                   )}
+                </div>
+              </CartDrawer>
+            </div>
 
             <div className="h-10 w-[1px] bg-black/5 mx-2 hidden md:block" />
 
@@ -141,7 +253,7 @@ export default function NavbarV5() {
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-3 px-2 py-1 rounded-[1.5rem] bg-transparent hover:bg-transparent hover:scale-110 transition-all cursor-pointer outline-none group">
                     <div className="h-10 w-10 rounded-[1.2rem] border-2 border-primary/20 overflow-hidden group-hover:scale-110 transition-transform">
-                      <img src={session.user?.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user?.name || '')}`} alt="Identity" className="h-full w-full object-cover" />
+                      <Image src={session.user?.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user?.name || '')}`} alt="Identity" width={40} height={40} className="h-full w-full object-cover" />
                     </div>
                     <span className="hidden sm:block text-[10px] font-black uppercase tracking-widest pr-2">
                       {session.user?.name?.split(' ')[0]}

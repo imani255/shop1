@@ -61,7 +61,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           await connectToDatabase();
           const mongoose = (await import('mongoose')).default;
           
-          if (mongoose.Types.ObjectId.isValid(user.id)) {
+          if (user.id && mongoose.Types.ObjectId.isValid(user.id)) {
             const dbUser = await User.findById(user.id);
             if (dbUser) {
               token.id = dbUser._id.toString();

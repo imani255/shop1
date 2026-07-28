@@ -20,8 +20,7 @@ interface SettingsContextType {
     bodyFont?: string;
   };
   aiConfig?: {
-    openRouterApiKey?: string;
-    systemPrompt?: string;
+    geminiApiKey?: string;
   };
   footerNavigation?: {
     label: string;
@@ -34,6 +33,11 @@ interface SettingsContextType {
     image: string;
     rating: number;
   }[];
+  contact?: {
+    email?: string;
+    phone?: string;
+    address?: string;
+  };
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);

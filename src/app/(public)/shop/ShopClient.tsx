@@ -89,7 +89,6 @@ export default function ShopClient({ initialProducts, initialCategories }: ShopC
   const [showOnlyTrending, setShowOnlyTrending] = useState(initialFilter === 'trending');
   const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page')) || 1);
   const itemsPerPage = 20;
-  
   // Sync page from URL parameter
   useEffect(() => {
     const urlPage = Number(searchParams.get('page')) || 1;
@@ -99,6 +98,7 @@ export default function ShopClient({ initialProducts, initialCategories }: ShopC
   }, [searchParams, currentPage]);
 
   const skipClampRef = useRef(false);
+  const isMounted = useRef(false);
 
   // Sync state to URL without full reload
   const setPageAndUrl = useCallback((page: number) => {
@@ -114,9 +114,17 @@ export default function ShopClient({ initialProducts, initialCategories }: ShopC
 
   // Reset page to 1 when filters change
   useEffect(() => {
+    if (!isMounted.current) {
+      isMounted.current = true;
+      return;
+    }
     skipClampRef.current = true;
-    setPageAndUrl(1);
-  }, [selectedCategories, minPrice, maxPrice, sortBy, searchTerm, showOnlyNew, showOnlySale, showOnlyFeatured, showOnlyTrending, setPageAndUrl]);
+    setCurrentPage(1);
+    
+    const params = new URLSearchParams(window.location.search);
+    params.delete('page');
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [selectedCategories, minPrice, maxPrice, sortBy, searchTerm, showOnlyNew, showOnlySale, showOnlyFeatured, showOnlyTrending, pathname, router]);
 
   const filteredProducts = products
     .filter(p => {
@@ -173,7 +181,8 @@ export default function ShopClient({ initialProducts, initialCategories }: ShopC
 
   const clearFilters = () => {
     setSelectedCategories([]);
-    setPriceRange([0, 50000]);
+    setMinPrice('');
+    setMaxPrice('');
     setSearchTerm('');
     setShowOnlyNew(false);
     setShowOnlySale(false);

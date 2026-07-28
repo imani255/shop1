@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Pagination } from '@/components/ui/pagination';
 import {
   Table,
   TableBody,
@@ -26,8 +28,10 @@ import {
   ArrowRight,
   ShieldCheck,
   UserCog,
-  Trash2
+  Trash2,
+  Search
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,10 +66,36 @@ interface UserData {
   lastOrderDate?: string;
 }
 
-export default function UsersPage() {
+function UsersContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [currentPage, setCurrentPage] = useState(Math.max(1, parseInt(searchParams.get('page') || '1')));
+
   const [users, setUsers] = useState<UserData[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+
+  // Debounce search term
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    if (currentPage > 1) {
+      setCurrentPage(1);
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('page');
+      router.push(`/admin/users?${params.toString()}`);
+    }
+  }, [debouncedSearchTerm]);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isAssignAdminOpen, setIsAssignAdminOpen] = useState(false);
   const [adminEmail, setAdminEmail] = useState('');
@@ -74,12 +104,15 @@ export default function UsersPage() {
   const { data: session } = useSession();
   const isSuperAdmin = (session?.user as any)?.role === 'super_admin';
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (page = currentPage) => {
+    setLoading(true);
     try {
-      const response = await fetch('/api/admin/users');
+      const response = await fetch(`/api/admin/users?page=${page}&limit=20&search=${debouncedSearchTerm}`);
       if (!response.ok) throw new Error('Failed to fetch users');
       const data = await response.json();
-      setUsers(data);
+      setUsers(data.users || []);
+      setTotalPages(data.totalPages || 1);
+      setTotalCount(data.totalCount || 0);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast.error('Failed to load users');
@@ -89,8 +122,15 @@ export default function UsersPage() {
   };
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    fetchUsers(currentPage);
+  }, [currentPage, debouncedSearchTerm]);
+
+  useEffect(() => {
+    const pageFromParams = Math.max(1, parseInt(searchParams.get('page') || '1'));
+    if (pageFromParams !== currentPage) {
+      setCurrentPage(pageFromParams);
+    }
+  }, [searchParams]);
 
   const openUserDetails = (user: UserData) => {
     setSelectedUser(user);
@@ -207,7 +247,7 @@ export default function UsersPage() {
           <p className="text-muted-foreground text-sm font-medium">Manage and view all registered customers and staff.</p>
         </div>
         <div className="flex items-center gap-3">
-          {isSuperAdmin && (
+          {(isSuperAdmin || (session?.user as any)?.role === 'admin') && (
             <Button 
               onClick={() => setIsAssignAdminOpen(true)}
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full px-6 h-11 shadow-lg shadow-blue-200 border-none transition-all hover:scale-105 active:scale-95"
@@ -217,9 +257,20 @@ export default function UsersPage() {
             </Button>
           )}
           <div className="bg-primary/10 px-5 py-2.5 rounded-full border border-primary/20">
-            <span className="text-primary font-bold text-sm">{users.length} Total Users</span>
+            <span className="text-primary font-bold text-sm">{totalCount} Total Users</span>
           </div>
         </div>
+      </div>
+      
+      {/* Search Filter Input */}
+      <div className="relative w-full max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search name, email or phone..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-9 h-11 rounded-xl border bg-white focus-visible:ring-primary/20 shadow-sm"
+        />
       </div>
 
       <div className="rounded-2xl border shadow-sm overflow-hidden bg-white">
@@ -257,13 +308,12 @@ export default function UsersPage() {
                   <TableCell>
                     {user.image && user.image !== '' ? (
                       <div className="relative h-10 w-10 rounded-full overflow-hidden border">
-                        <img 
+                        <Image 
                           src={user.image} 
                           alt={user.name} 
+                          width={40}
+                          height={40}
                           className="h-full w-full object-cover"
-                          onError={(e) => {
-                            (e.target as any).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`;
-                          }}
                         />
                       </div>
                     ) : (
@@ -289,10 +339,11 @@ export default function UsersPage() {
                   </TableCell>
                   <TableCell>
                     <Badge 
-                      variant={user.role === 'admin' ? 'default' : 'outline'}
+                      variant={user.role === 'admin' || user.role === 'manager' ? 'default' : 'outline'}
                       className={`
                         capitalize px-3 py-0.5 rounded-full font-bold text-[10px] tracking-wider
                         ${user.role === 'admin' ? 'bg-blue-600 hover:bg-blue-700' : ''}
+                        ${user.role === 'manager' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}
                       `}
                     >
                       {user.role}
@@ -325,14 +376,25 @@ export default function UsersPage() {
                         <DropdownMenuGroup>
                           <DropdownMenuLabel className="text-[10px] font-black uppercase text-muted-foreground px-2 py-1.5">Management</DropdownMenuLabel>
                           
-                          {user.role === 'user' ? (
+                          {user.role !== 'admin' && (
                             <DropdownMenuItem 
                               onClick={() => handleUpdateRole(user._id, 'admin')}
                               className="cursor-pointer text-blue-600 font-bold"
                             >
                               <ShieldCheck className="mr-2 h-4 w-4" /> Make Admin
                             </DropdownMenuItem>
-                          ) : (
+                          )}
+
+                          {user.role !== 'manager' && (
+                            <DropdownMenuItem 
+                              onClick={() => handleUpdateRole(user._id, 'manager')}
+                              className="cursor-pointer text-primary font-bold"
+                            >
+                              <UserCog className="mr-2 h-4 w-4" /> Make Manager
+                            </DropdownMenuItem>
+                          )}
+
+                          {user.role !== 'user' && (
                             <DropdownMenuItem 
                               onClick={() => handleUpdateRole(user._id, 'user')}
                               className="cursor-pointer text-slate-600 font-bold"
@@ -360,6 +422,20 @@ export default function UsersPage() {
             )}
           </TableBody>
         </Table>
+        {totalPages > 1 && (
+          <div className="py-6 border-t bg-white px-6">
+            <Pagination 
+              currentPage={currentPage} 
+              totalPages={totalPages} 
+              onPageChange={(page) => {
+                setCurrentPage(page);
+                const params = new URLSearchParams(searchParams.toString());
+                params.set('page', page.toString());
+                router.push(`?${params.toString()}`);
+              }}
+            />
+          </div>
+        )}
       </div>
 
       {/* User Details Modal */}
@@ -378,11 +454,12 @@ export default function UsersPage() {
               <div className="flex flex-col md:flex-row items-center gap-6 p-6 bg-slate-50 rounded-3xl border border-slate-100">
                 <div className="relative h-24 w-24 rounded-full overflow-hidden border-4 border-white shadow-xl flex-shrink-0 bg-primary/10 flex items-center justify-center">
                   {selectedUser.image ? (
-                    <img 
+                    <Image 
                       src={selectedUser.image} 
                       alt={selectedUser.name} 
+                      width={96}
+                      height={96}
                       className="h-full w-full object-cover"
-                      onError={(e) => { (e.target as any).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedUser.name)}&background=random`; }}
                     />
                   ) : (
                     <UserIcon className="h-10 w-10 text-primary" />
@@ -541,6 +618,18 @@ export default function UsersPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function UsersPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-[300px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    }>
+      <UsersContent />
+    </Suspense>
   );
 }
 

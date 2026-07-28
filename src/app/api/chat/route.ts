@@ -1,32 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
 import { getCachedSettings } from '@/lib/data-fetching';
+import { retrieveRelevantContext } from '@/services/ragService';
+import { getChatResponse } from '@/services/geminiService';
+import { auth } from '@/auth';
 
 const MAX_MESSAGES = 20;
 const MAX_CONTENT_LENGTH = 2000;
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await auth();
     // Fetch global AI configuration
     const settings = await getCachedSettings();
     const aiConfig = settings?.aiConfig || {};
     
-    const apiKey = aiConfig.openRouterApiKey || process.env.OPENROUTER_API_KEY;
-    const systemPrompt = aiConfig.systemPrompt || 'You are a helpful e-commerce assistant for Care Mom.';
+    const apiKey = aiConfig.geminiApiKey;
 
     if (!apiKey) {
-      console.error('OPENROUTER_API_KEY is missing');
-      return NextResponse.json({ error: 'AI Service Unavailable' }, { status: 503 });
+      console.error('Gemini API Key is missing');
+      return NextResponse.json({ error: 'AI Service Unavailable. Gemini API Key is not configured.' }, { status: 503 });
     }
-
-    const openai = new OpenAI({
-      baseURL: 'https://openrouter.ai/api/v1',
-      apiKey: apiKey,
-      defaultHeaders: {
-        'HTTP-Referer': process.env.NEXTAUTH_URL || 'http://localhost:3000',
-        'X-Title': `${settings?.brandName || 'Care Mom'} - AI Assistant`,
-      },
-    });
 
     const { messages } = await req.json();
 
@@ -57,26 +50,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Too many messages. Max allowed: ${MAX_MESSAGES}` }, { status: 422 });
     }
 
-    const completion = await openai.chat.completions.create({
-      model: 'z-ai/glm-4.5-air:free',
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt,
-        },
-        ...validatedMessages,
-      ],
-      temperature: 0.7,
-      max_tokens: 1000,
-    });
-
-    const aiMessage = completion?.choices?.[0]?.message?.content;
-
-    if (!aiMessage) {
-      throw new Error('Empty response from AI model');
+    // Extract the latest message and history
+    const latestMessageObj = validatedMessages[validatedMessages.length - 1];
+    if (latestMessageObj.role !== 'user') {
+      return NextResponse.json({ error: 'Latest message must be from user' }, { status: 400 });
     }
+    const latestMessage = latestMessageObj.content;
+    const history = validatedMessages.slice(0, -1).map((msg: any) => ({
+      role: msg.role === 'assistant' ? 'model' as const : 'user' as const,
+      parts: msg.content
+    }));
 
-    return NextResponse.json({ message: aiMessage });
+    // Retrieve real-time relevant database records via vector search
+    const context = await retrieveRelevantContext(latestMessage, (session?.user as any)?.id, apiKey);
+    console.log("RAG Context retrieved, length:", context ? context.length : 0);
+
+    const response = await getChatResponse(latestMessage, history, context, apiKey);
+
+    return NextResponse.json({ message: response });
   } catch (error: any) {
     console.error('Chat API Error:', error);
     return NextResponse.json({ error: 'Failed to connect to AI' }, { status: 500 });

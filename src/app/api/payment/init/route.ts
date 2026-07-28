@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/db';
 import Order from '@/models/Order';
 import { initPayment } from '@/lib/sslcommerz';
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
 
     const customerEmail = session.user.email;
     if (!customerEmail) {
-        return NextResponse.json({ message: 'User email is required for payment' }, { status: 400 });
+      return NextResponse.json({ message: 'User email is required for payment' }, { status: 400 });
     }
 
     const data = {
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ url: response.GatewayPageURL });
     } else {
       console.error('SSLCommerz Initialization Failed. Session User:', session.user.id, 'Order ID:', orderId, 'Status:', response?.status);
-      return NextResponse.json({ 
+      return NextResponse.json({
         message: 'Failed to initialize payment gateway'
       }, { status: 500 });
     }

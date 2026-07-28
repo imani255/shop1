@@ -1,4 +1,4 @@
-import { headers } from 'next/headers';
+﻿import { headers } from 'next/headers';
 import { Suspense } from 'react';
 import { getCachedProducts, getCachedCategories, getCachedSettings } from '@/lib/data-fetching';
 import { ShopHeaderSkeleton, ProductCardSkeleton } from '@/components/storefront/Skeletons';
@@ -35,8 +35,8 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function ShopPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   // Fetch initial data on the server with caching
   const [initialProducts, initialCategories, settings] = await Promise.all([
-    getCachedProducts({}, 1000), 
-    getCachedCategories(), 
+    getCachedProducts({}, 1000),
+    getCachedCategories(),
     getCachedSettings()
   ]);
 
@@ -45,11 +45,11 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
 
   return (
     <Suspense fallback={<ShopFallback />}>
-      <ShopListingSelector 
+      <ShopListingSelector
         style={style}
         productCardStyle={productCardStyle}
-        products={initialProducts} 
-        categories={initialCategories} 
+        products={initialProducts}
+        categories={initialCategories}
         searchParams={searchParams}
       />
     </Suspense>

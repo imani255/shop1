@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import { useSession } from 'next-auth/react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { 
     ArrowLeft, 
@@ -184,9 +185,11 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
                                 {(Array.isArray(order?.items) ? order.items : []).map((item: any, idx: number) => (
                                     <div key={idx} className="p-6 flex items-center gap-4 hover:bg-muted/30 transition-colors">
                                         <div className="h-20 w-20 rounded-2xl bg-muted overflow-hidden flex-shrink-0 border">
-                                            <img 
+                                            <Image 
                                                 src={item.image || '/placeholder.png'} 
                                                 alt={item.name} 
+                                                width={80}
+                                                height={80}
                                                 className="h-full w-full object-cover" 
                                             />
                                         </div>
