@@ -12,7 +12,8 @@ import {
   Copy,
   Eye,
   BarChart2,
-  Monitor
+  Monitor,
+  Upload
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -83,6 +84,111 @@ export default function LandingPagesPage() {
     }
   };
 
+  const handleImport = async () => {
+    const { value: file } = await Swal.fire({
+      title: 'Import Elementor/CartFlows JSON',
+      input: 'file',
+      inputAttributes: {
+        'accept': '.json',
+        'aria-label': 'Upload landing page JSON file'
+      },
+      showCancelButton: true,
+      confirmButtonText: 'Next',
+      confirmButtonColor: '#006E3D',
+    });
+
+    if (file) {
+      const reader = new FileReader();
+      
+      reader.onerror = () => {
+        toast.dismiss();
+        toast.error('Failed to read JSON file.');
+      };
+
+      reader.onload = async (e) => {
+        const text = e.target?.result as string;
+        let parsed: any;
+        try {
+          parsed = JSON.parse(text);
+        } catch (err) {
+          toast.error('Invalid JSON file format.');
+          return;
+        }
+
+        const fileNameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+        const escapeHtml = (str: string) => {
+          return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+        };
+        const cleanSlug = fileNameWithoutExt.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+
+        let formValues: any;
+        try {
+          const result = await Swal.fire({
+            title: 'Configure Imported Landing Page',
+            html:
+              `<input id="swal-import-title" class="swal2-input" placeholder="Page Title" value="${escapeHtml(fileNameWithoutExt)}">` +
+              `<input id="swal-import-slug" class="swal2-input" placeholder="Slug (e.g. skin-care-deal)" value="${cleanSlug}">` +
+              `<input id="swal-import-pixel" class="swal2-input" placeholder="Facebook Pixel ID (Optional)">`,
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: 'Import & Create',
+            preConfirm: () => {
+              return {
+                title: (document.getElementById('swal-import-title') as HTMLInputElement).value,
+                slug: (document.getElementById('swal-import-slug') as HTMLInputElement).value,
+                pixelId: (document.getElementById('swal-import-pixel') as HTMLInputElement).value,
+              }
+            }
+          });
+          formValues = result.value;
+        } catch (err) {
+          console.error('Modal error:', err);
+          return;
+        }
+
+        if (formValues) {
+          if (!formValues.title || !formValues.slug) {
+            toast.error('Title and Slug are required');
+            return;
+          }
+
+          toast.loading('Importing landing page...');
+          try {
+            const res = await fetch('/api/admin/landing-pages/import', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                title: formValues.title,
+                slug: formValues.slug,
+                pixelId: formValues.pixelId,
+                jsonContent: parsed,
+              })
+            });
+
+            toast.dismiss();
+
+            if (res.ok) {
+              toast.success('Landing page imported successfully!');
+              fetchPages();
+            } else {
+              const errData = await res.json().catch(() => ({}));
+              toast.error(errData.message || 'Failed to import page');
+            }
+          } catch (fetchErr) {
+            toast.dismiss();
+            toast.error('Network error. Failed to import landing page.');
+          }
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
   const handleCreate = async () => {
     const { value: formValues } = await Swal.fire({
       title: 'Create New Landing Page',
@@ -144,9 +250,14 @@ export default function LandingPagesPage() {
           </h1>
           <p className="text-muted-foreground text-sm">Create high-converting landing pages for your products.</p>
         </div>
-        <Button onClick={handleCreate} className="gap-2 rounded-full px-6 font-bold">
-          <Plus className="h-4 w-4" /> Create New Page
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleImport} variant="outline" className="gap-2 rounded-full px-6 font-bold">
+            <Upload className="h-4 w-4" /> Import JSON
+          </Button>
+          <Button onClick={handleCreate} className="gap-2 rounded-full px-6 font-bold">
+            <Plus className="h-4 w-4" /> Create New Page
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center gap-2 max-w-sm">
@@ -167,6 +278,7 @@ export default function LandingPagesPage() {
             <TableRow>
               <TableHead className="font-bold">Title & URL</TableHead>
               <TableHead className="font-bold">Status</TableHead>
+              <TableHead className="font-bold text-center">Source</TableHead>
               <TableHead className="font-bold text-center">Sections</TableHead>
               <TableHead className="font-bold text-center">Orders</TableHead>
               <TableHead className="font-bold text-right">Actions</TableHead>
@@ -175,11 +287,11 @@ export default function LandingPagesPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-10">Loading pages...</TableCell>
+                <TableCell colSpan={6} className="text-center py-10">Loading pages...</TableCell>
               </TableRow>
             ) : filteredPages.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">No landing pages found. Create your first one!</TableCell>
+                <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">No landing pages found. Create your first one!</TableCell>
               </TableRow>
             ) : filteredPages.map((page) => (
               <TableRow key={page._id} className="hover:bg-muted/20 transition-colors">
@@ -201,8 +313,13 @@ export default function LandingPagesPage() {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-center">
+                  <Badge variant={page.importType && page.importType !== 'native' ? "secondary" : "outline"} className="rounded-md font-mono capitalize">
+                    {page.importType || 'native'}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-center">
                   <Badge variant="outline" className="rounded-md font-mono">
-                    {page.sections?.length || 0}
+                    {page.importType && page.importType !== 'native' ? 'Dynamic' : (page.sections?.length || 0)}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-center font-bold text-emerald-600">
@@ -219,9 +336,15 @@ export default function LandingPagesPage() {
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild className="cursor-pointer">
-                        <Link href={`/admin/landing-pages/${page._id}/builder`} className="flex items-center gap-2">
-                          <Edit3 className="h-4 w-4 text-blue-500" /> Open Builder
-                        </Link>
+                        {page.importType && page.importType !== 'native' ? (
+                          <span className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground cursor-not-allowed">
+                            <Edit3 className="h-4 w-4" /> Builder (Imported)
+                          </span>
+                        ) : (
+                          <Link href={`/admin/landing-pages/${page._id}/builder`} className="flex items-center gap-2">
+                            <Edit3 className="h-4 w-4 text-blue-500" /> Open Builder
+                          </Link>
+                        )}
                       </DropdownMenuItem>
                       <DropdownMenuItem className="cursor-pointer gap-2" onClick={() => window.open(`/lp/${page.slug}`, '_blank')}>
                         <Eye className="h-4 w-4 text-emerald-500" /> View Live

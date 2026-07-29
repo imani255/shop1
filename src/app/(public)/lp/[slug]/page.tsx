@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import connectToDatabase from '@/lib/db';
 import LandingPage from '@/models/LandingPage';
 import { getCachedSettings } from '@/lib/data-fetching';
+import Script from 'next/script';
 
 // We will build these components next
 import HeroSection from '@/app/(public)/lp/[slug]/_components/HeroSection';
@@ -14,6 +15,7 @@ import VideoSection from '@/app/(public)/lp/[slug]/_components/VideoSection';
 import FAQSection from '@/app/(public)/lp/[slug]/_components/FAQSection';
 import ContentBlock from '@/app/(public)/lp/[slug]/_components/ContentBlock';
 import FloatingLPBar from '@/app/(public)/lp/[slug]/_components/FloatingLPBar';
+import ElementorRenderer from '@/app/(public)/lp/[slug]/_components/ElementorRenderer';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   await connectToDatabase();
@@ -44,6 +46,41 @@ export default async function PublicLandingPage({ params }: { params: Promise<{ 
   // Tracking view (non-blocking)
   LandingPage.updateOne({ _id: page._id }, { $inc: { viewCount: 1 } })
     .catch(err => console.error('Failed to track view:', err));
+
+  // If page is imported Elementor layout, render it directly
+  if (page.importType && page.importType !== 'native' && page.elementorData) {
+    return (
+      <div className="min-h-screen bg-white">
+        {page.pixelId && /^[0-9]+$/.test(page.pixelId) && (
+          <>
+            <Script id="fb-pixel-imported" strategy="afterInteractive">
+              {`
+                !function(f,b,e,v,n,t,s)
+                {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+                n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+                if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+                n.queue=[];t=b.createElement(e);t.async=!0;
+                t.src=v;s=b.getElementsByTagName(e)[0];
+                s.parentNode.insertBefore(t,s)}(window, document,'script',
+                'https://connect.facebook.net/en_US/fbevents.js');
+                fbq('init', '${page.pixelId}');
+                fbq('track', 'PageView');
+              `}
+            </Script>
+            <noscript>
+              <img 
+                height="1" 
+                width="1" 
+                style={{ display: 'none' }}
+                src={`https://www.facebook.com/tr?id=${page.pixelId}&ev=PageView&noscript=1`}
+              />
+            </noscript>
+          </>
+        )}
+        <ElementorRenderer data={page.elementorData} settings={settings} />
+      </div>
+    );
+  }
 
   // Ensure there is always a Direct Order Form on the page (at the very bottom by default)
   const sections = [...(page.sections || [])];

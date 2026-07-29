@@ -4,6 +4,9 @@ export interface ILandingPage extends Document {
   title: string;
   slug: string;
   description?: string;
+  importType?: 'native' | 'elementor' | 'cartflows';
+  elementorData?: any;
+  pixelId?: string;
   sections: {
     id: string; // Unique ID for Drag & Drop
     type: string; // hero, product, features, testimonials, faq, video, order_form, etc.
@@ -38,6 +41,9 @@ const LandingPageSchema: Schema<ILandingPage> = new Schema(
       trim: true
     },
     description: { type: String },
+    importType: { type: String, enum: ['native', 'elementor', 'cartflows'], default: 'native' },
+    elementorData: { type: Schema.Types.Mixed },
+    pixelId: { type: String },
     sections: [
       {
         id: { type: String, required: true },

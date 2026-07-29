@@ -63,6 +63,8 @@ const orderSchema = z.object({
     senderNumber: z.string().optional(),
     transactionId: z.string().optional(),
   }).optional(),
+  landingPageSlug: z.string().optional().nullable(),
+  landingPageId: z.string().optional().nullable(),
 });
 
 export async function POST(req: NextRequest) {
@@ -458,6 +460,19 @@ export async function POST(req: NextRequest) {
     }
 
     await session.commitTransaction();
+
+    // Increment landing page orderCount if tracking details are provided
+    if (validation.data.landingPageSlug || validation.data.landingPageId) {
+      try {
+        const LandingPage = (await import('@/models/LandingPage')).default;
+        const query = validation.data.landingPageId 
+          ? { _id: validation.data.landingPageId } 
+          : { slug: validation.data.landingPageSlug };
+        await LandingPage.updateOne(query, { $inc: { orderCount: 1 } });
+      } catch (e) {
+        console.error('Failed to increment landing page orderCount:', e);
+      }
+    }
 
     // Delete matching abandoned cart on successful purchase
     try {

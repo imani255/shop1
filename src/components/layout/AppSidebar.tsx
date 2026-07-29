@@ -141,6 +141,10 @@ const data = {
           title: "FAQs",
           url: "/admin/cms/faqs",
         },
+        {
+          title: "Landing Pages",
+          url: "/admin/landing-pages",
+        },
       ],
     },
     {
