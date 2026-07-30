@@ -465,8 +465,8 @@ export async function POST(req: NextRequest) {
     if (validation.data.landingPageSlug || validation.data.landingPageId) {
       try {
         const LandingPage = (await import('@/models/LandingPage')).default;
-        const query = validation.data.landingPageId 
-          ? { _id: validation.data.landingPageId } 
+        const query = validation.data.landingPageId
+          ? { _id: validation.data.landingPageId }
           : { slug: validation.data.landingPageSlug };
         await LandingPage.updateOne(query, { $inc: { orderCount: 1 } });
       } catch (e) {
@@ -576,7 +576,7 @@ export async function GET(req: NextRequest) {
             { email: { $regex: search, $options: 'i' } }
           ]
         }).select('_id');
-        
+
         const searchConditions: any[] = [
           { "shippingAddress.fullName": { $regex: search, $options: 'i' } },
           { "shippingAddress.phone": { $regex: search, $options: 'i' } }
@@ -604,7 +604,7 @@ export async function GET(req: NextRequest) {
     }
 
     const totalCount = await Order.countDocuments(query);
-    
+
     // Get counts for each status to display in tabs
     let counts = {
       all: 0,
@@ -639,7 +639,7 @@ export async function GET(req: NextRequest) {
         else if (sc._id === 'Cancelled') counts.cancelled = sc.count;
       });
     }
-    
+
     let ordersQuery = Order.find(query).sort({ createdAt: -1 });
 
     if (fetchAll && isAdmin) {
@@ -669,9 +669,9 @@ export async function GET(req: NextRequest) {
           return order.items.every((item: any) => {
             return other.items.some((otherItem: any) => {
               return String(otherItem.product) === String(item.product) &&
-                     String(otherItem.color || '') === String(item.color || '') &&
-                     String(otherItem.size || '') === String(item.size || '') &&
-                     otherItem.quantity === item.quantity;
+                String(otherItem.color || '') === String(item.color || '') &&
+                String(otherItem.size || '') === String(item.size || '') &&
+                otherItem.quantity === item.quantity;
             });
           });
         });
@@ -700,4 +700,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }
-
